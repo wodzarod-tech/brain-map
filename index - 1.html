@@ -7,22 +7,7 @@
 <style>
   html,body{height:100%;margin:0}
   body{font-family:Arial,system-ui;overflow:hidden}
-  
-#toolbar {
-  position: fixed;
-  bottom: 10px;           /* distance from bottom */
-  left: 50%;              /* start at 50% from left */
-  transform: translateX(-50%); /* center horizontally */
-  z-index: 50;
-  background: #fff;
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.15);
-  display: flex;
-  align-items: center;
-  gap: 8px;               /* space between buttons/inputs */
-}
-
+  #toolbar{position:fixed;left:10px;top:10px;z-index:50;background:#fff;padding:10px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
   #toolbar label{margin-left:8px}
   canvas#canvas{position:absolute;left:0;top:0}
   canvas#minimap{position:fixed;right:10px;bottom:10px;border:1px solid #999;background:#fff;z-index:60}
@@ -33,78 +18,68 @@
 </style>
 </head>
 <body>
-
-	<div id="toolbar">
-	  <input id="nodeColor" type="color" value="#3498db" style="display:none">	<!-- Color -->
-	  
-	  <select id="nodeShape" style="display:none"><option value="circle">Circle</option><option value="square">Square</option><option value="rounded">Rounded</option></select> <!-- Shape -->
-	  
-	  <select id="edgeType" style="display:none"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="bold">Bold</option></select> <!-- Edge -->
-	  
-	  <button id="connectBtn" style="display:none"></button> <!-- Connect Nodes -->
-	  
-	  <span id="modeIndicator" style="margin-left:8px;font-weight:bold" style="display:none"></span> <!-- Mode: Normal -->
-	  	  
-	  <button id="undoBtn" title="Undo">↩️</button> <!-- Undo -->
-	  
-	  <button id="redoBtn" title="Redo">↪️</button> <!-- Redo -->
-	  
-  	  <button id="loadGraphBtn" title="Load">📂</button>
-
-	  <button id="saveAllBtn" title="Save">💾</button>
-
-  	  <button id="exportPngBtn" title="Export PNG">📤</button> <!-- Export PNG -->
-	  
-	  <input type="file" id="loadGraphInput" accept=".json" style="display:none">
-	</div>
+<div id="toolbar">
+  <button id="addNodeBtn">Add Node</button>
+  <label>Color:</label><input id="nodeColor" type="color" value="#3498db">
+  <label>Shape:</label>
+  <select id="nodeShape"><option value="circle">Circle</option><option value="square">Square</option><option value="rounded">Rounded</option></select>
+  <label>Edge:</label>
+  <select id="edgeType"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="bold">Bold</option></select>
+  <button id="connectBtn">Connect Nodes</button>
+  <span id="modeIndicator" style="margin-left:8px;font-weight:bold">Mode: Normal</span>
+  <button id="exportPngBtn">Export PNG</button>
+  <button id="undoBtn">Undo</button>
+  <button id="redoBtn">Redo</button>
+<div id="saveLoadToolbar" style="position:fixed; top:130px; right:10px; z-index:55; background:#fff; padding:6px 10px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+  <button id="saveAllBtn">💾 Save Graph</button>
+  <button id="loadGraphBtn">📂 Load Graph</button>
+  <input type="file" id="loadGraphInput" accept=".json" style="display:none">
+</div>
+</div>
 
 <canvas id="canvas"></canvas>
-
-<canvas id="minimap" width="200" height="150" style="display:none"></canvas>
-
-<button id="exportCommentsBtn" style="display:none">Export Comments JSON</button>
+<canvas id="minimap" width="200" height="150"></canvas>
+<button id="exportCommentsBtn">Export Comments JSON</button>
 
 <!-- Node context menu -->
 <div id="nodeMenu">
   <button id="menuClose">✕</button>
-  
-  	<!-- Color & Shape -->
-	<div style="margin-top:6px">
-		<input id="menuColor" type="color" title="Color">
+  <div style="margin-top:6px">
+  <label>Arrow Type:</label>
+  <select id="menuEdgeType">
+    <option value="solid">Solid</option>
+    <option value="dashed">Dashed</option>
+    <option value="bold">Bold</option>
+  </select>
+</div>
 
-		<select id="menuShape"><option value="circle">Circle</option><option value="square">Square</option><option value="rounded">Rounded</option></select>
-		
-		<!-- Delete Node -->
-		<button id="menuDelete" title="Delete">🗑️</button>
-	</div>
+<div style="margin-top:6px">
+  <label>Arrowhead:</label>
+  <select id="menuArrowhead">
+    <option value="triangle">Triangle</option>
+    <option value="diamond">Diamond</option>
+    <option value="none">None</option>
+  </select>
+</div>
 
-	<!-- Arrow -->
-	<div style="margin-top:6px">
-	  <label>Arrow:</label>
-
-	  <select id="menuEdgeType" title="Arrow Type">
-		<option value="solid">Solid</option>
-		<option value="dashed">Dashed</option>
-		<option value="bold">Bold</option>
-	  </select>
-
-	  <select id="menuArrowhead" title="Arrowhead">
-		<option value="triangle">Triangle</option>
-		<option value="diamond">Diamond</option>
-		<option value="none">None</option>
-	  </select>
-	</div>
-
-	<!-- Title -->
-	<div style="margin-top:6px">
-		<button id="menuAddTitle">Title</button>
-		<select id="menuTitlePos"><option value="above">Above</option><option value="inside">Inside</option><option value="below">Below</option></select>
-	</div>
-	
-	<!-- Notes -->
-	<div style="margin-top:6px">
-		<button id="menuSeeComments" title="Notes">📝</button>
-	</div>
+  <div style="margin-top:6px">
+    <label>Color:</label><input id="menuColor" type="color">
+  </div>
+  <div style="margin-top:6px">
+    <label>Shape:</label>
+    <select id="menuShape"><option value="circle">Circle</option><option value="square">Square</option><option value="rounded">Rounded</option></select>
+  </div>
+  <div style="margin-top:6px">
+    <label>Title Pos:</label>
+    <select id="menuTitlePos"><option value="above">Above</option><option value="inside">Inside</option><option value="below">Below</option></select>
+    <button id="menuAddTitle">Add Title</button>
+  </div>
+  <div style="margin-top:6px">
+  <button id="menuSeeComments">Comments</button>
+</div>
+  <div style="margin-top:8px;text-align:right">
+    <button id="menuDelete">Delete Node</button>
+  </div>
 </div>
 
 <script>
@@ -113,6 +88,7 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const minimap = document.getElementById('minimap');
 const mctx = minimap.getContext('2d');
+const addNodeBtn = document.getElementById('addNodeBtn');
 const exportPngBtn = document.getElementById('exportPngBtn');
 const nodeColor = document.getElementById('nodeColor');
 const nodeShape = document.getElementById('nodeShape');
@@ -139,31 +115,6 @@ const loadGraphInput = document.getElementById('loadGraphInput');
 const menuEdgeType = document.getElementById('menuEdgeType');
 
 const menuArrowhead = document.getElementById('menuArrowhead');
-
-// Double left-click to delete node
-let lastLeftClickTime = 0;
-
-canvas.addEventListener('dblclick', (e) => {
-  if (e.button !== 0) return; // left button only
-  const p = screenToWorld(e.clientX, e.clientY);
-
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const n = nodes[i];
-    if (Math.hypot(p.x - n.x, p.y - n.y) < 30) {
-      // Delete node
-      saveHistory();
-      // Remove connected edges
-      for (let j = edges.length - 1; j >= 0; j--) {
-        if (edges[j].from === i || edges[j].to === i) edges.splice(j, 1);
-      }
-      nodes.splice(i, 1);
-      nodeMenu.style.display = 'none';
-      menuNodeRef = null;
-      menuNodeIndex = -1;
-      break;
-    }
-  }
-});
 
 menuArrowhead.addEventListener('change', () => {
   if (!menuNodeRef) return;
@@ -379,6 +330,9 @@ exportPngBtn.addEventListener('click', ()=>{
   for(const n of nodes){ tctx.fillStyle=n.color; tctx.strokeStyle='#333'; tctx.lineWidth=2; if(n.shape==='circle'){ tctx.beginPath(); tctx.arc(n.x,n.y,25,0,Math.PI*2); tctx.fill(); tctx.stroke(); } else if(n.shape==='square'){ tctx.beginPath(); tctx.rect(n.x-25,n.y-25,50,50); tctx.fill(); tctx.stroke(); } else { const r=10,size=50,x=n.x-25,y=n.y-25; tctx.beginPath(); tctx.moveTo(x+r,y); tctx.lineTo(x+size-r,y); tctx.quadraticCurveTo(x+size,y,x+size,y+r); tctx.lineTo(x+size,y+size-r); tctx.quadraticCurveTo(x+size,y+size,x+size-r,y+size); tctx.lineTo(x+r,y+size); tctx.quadraticCurveTo(x,y+size,x,y+size-r); tctx.lineTo(x,y+r); tctx.quadraticCurveTo(x,y,x+r,y); tctx.fill(); tctx.stroke(); } }
   const link = document.createElement('a'); link.download='graph.png'; link.href = tmp.toDataURL('image/png'); link.click();
 });
+
+// Add Node button
+addNodeBtn.addEventListener('click', ()=>{ saveHistory(); const pos = screenToWorld(150 + Math.random()*300, 100 + Math.random()*200); nodes.push({ x: pos.x, y: pos.y, color: nodeColor.value, shape: nodeShape.value }); });
 
 // Click to create node or select/connect
 canvas.addEventListener('click', (e)=>{
