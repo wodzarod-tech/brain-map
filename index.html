@@ -310,53 +310,66 @@ function drawTitle(n){ if(!n.title) return; const fontSize = Math.max(12, 14 / M
 function drawNode(n){ const r=25; ctx.fillStyle = n.color || '#3498db'; ctx.strokeStyle='#333'; ctx.lineWidth = 2/Math.max(0.5,scale); if(n.shape==='circle'){ ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.fill(); ctx.stroke(); } else if(n.shape==='square'){ ctx.beginPath(); ctx.rect(n.x-r,n.y-r,r*2,r*2); ctx.fill(); ctx.stroke(); } else { const rad=10,w=r*2,h=r*2,x=n.x-w/2,y=n.y-h/2; ctx.beginPath(); ctx.moveTo(x+rad,y); ctx.lineTo(x+w-rad,y); ctx.quadraticCurveTo(x+w,y,x+w,y+rad); ctx.lineTo(x+w,y+h-rad); ctx.quadraticCurveTo(x+w,y+h,x+w-rad,y+h); ctx.lineTo(x+rad,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-rad); ctx.lineTo(x,y+rad); ctx.quadraticCurveTo(x,y,x+rad,y); ctx.fill(); ctx.stroke(); } drawTitle(n); }
 
 function drawEdges() {
+  const nodeRadius = 25; // radius of nodes
+
   for (const e of edges) {
     const a = nodes[e.from], b = nodes[e.to];
     if (!a || !b) continue;
 
     ctx.save();
-    ctx.lineWidth = (e.type === 'bold') ? 4/Math.max(0.5, scale) : 2/Math.max(0.5, scale);
-    if (e.type === 'dashed') ctx.setLineDash([10,10]);
+    ctx.lineWidth = (e.type === 'bold') ? 4 / scale : 2 / scale;
+    if (e.type === 'dashed') ctx.setLineDash([10 / scale, 10 / scale]);
     else ctx.setLineDash([]);
 
-    // Draw line
+    // Calculate angle
+    const ang = Math.atan2(b.y - a.y, b.x - a.x);
+
+    // Shorten line so arrow tip ends at node border
+    const tipX = b.x - nodeRadius * Math.cos(ang);
+    const tipY = b.y - nodeRadius * Math.sin(ang);
+
+    const startX = a.x;
+    const startY = a.y;
+
+    // Draw line to tipX, tipY
     ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(tipX, tipY);
     ctx.strokeStyle = '#000';
     ctx.stroke();
-    ctx.setLineDash([]);
 
-    // Draw arrowhead based on type
-    const ang = Math.atan2(b.y - a.y, b.x - a.x);
-    const size = 12 / scale; // scale arrow size
+    // Draw arrowhead
+    const size = 12; // arrowhead size
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
 
-    if(e.arrowhead === 'triangle') {
-      ctx.beginPath();
-      ctx.moveTo(b.x, b.y);
-      ctx.lineTo(b.x - size * Math.cos(ang - Math.PI/6), b.y - size * Math.sin(ang - Math.PI/6));
-      ctx.lineTo(b.x - size * Math.cos(ang + Math.PI/6), b.y - size * Math.sin(ang + Math.PI/6));
-      ctx.closePath();
-      ctx.fillStyle = '#000';
-      ctx.fill();
-    } else if(e.arrowhead === 'diamond') {
-      const backX = b.x - size * Math.cos(ang);
-      const backY = b.y - size * Math.sin(ang);
-      const leftX = backX - (size/2) * Math.sin(ang);
-      const leftY = backY + (size/2) * Math.cos(ang);
-      const rightX = backX + (size/2) * Math.sin(ang);
-      const rightY = backY - (size/2) * Math.cos(ang);
+    if (e.arrowhead === 'triangle') {
+      const leftX = tipX - size * Math.cos(ang - Math.PI / 6);
+      const leftY = tipY - size * Math.sin(ang - Math.PI / 6);
+      const rightX = tipX - size * Math.cos(ang + Math.PI / 6);
+      const rightY = tipY - size * Math.sin(ang + Math.PI / 6);
 
-      ctx.beginPath();
-      ctx.moveTo(b.x, b.y);
+      ctx.moveTo(tipX, tipY);
       ctx.lineTo(leftX, leftY);
-      ctx.lineTo(backX - size * Math.cos(ang), backY - size * Math.sin(ang));
       ctx.lineTo(rightX, rightY);
       ctx.closePath();
-      ctx.fillStyle = '#000';
+      ctx.fill();
+    } 
+    else if (e.arrowhead === 'diamond') {
+      const backX = tipX - size * Math.cos(ang);
+      const backY = tipY - size * Math.sin(ang);
+      const leftX = backX - (size / 2) * Math.sin(ang);
+      const leftY = backY + (size / 2) * Math.cos(ang);
+      const rightX = backX + (size / 2) * Math.sin(ang);
+      const rightY = backY - (size / 2) * Math.cos(ang);
+
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(leftX, leftY);
+      ctx.lineTo(backX, backY);
+      ctx.lineTo(rightX, rightY);
+      ctx.closePath();
       ctx.fill();
     }
-    // 'none' → do nothing
 
     ctx.restore();
   }
