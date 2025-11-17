@@ -35,6 +35,8 @@
 <body>
 
 	<div id="toolbar">
+	  <button id="drawSquareBtn" title="Draw Square">⬛ Square</button>
+
 	  <input id="nodeColor" type="color" value="#3498db" style="display:none">	<!-- Color -->
 	  
 	  <select id="nodeShape" style="display:none"><option value="circle">Circle</option><option value="square">Square</option><option value="rounded">Rounded</option></select> <!-- Shape -->
@@ -139,6 +141,8 @@ const loadGraphInput = document.getElementById('loadGraphInput');
 const menuEdgeType = document.getElementById('menuEdgeType');
 
 const menuArrowhead = document.getElementById('menuArrowhead');
+
+let currentNodeShape = 'circle'; // default node shape
 
 // Double left-click to delete node
 let lastLeftClickTime = 0;
