@@ -5,147 +5,658 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Graph Editor — Custom Nodes</title>
 <style>
-  html,body{height:100%;margin:0}
-  body{font-family:Arial,system-ui;overflow:hidden}
-  
-#toolbar {
-  position: fixed;
-  bottom: 10px;           /* distance from bottom */
-  left: 50%;              /* start at 50% from left */
-  transform: translateX(-50%); /* center horizontally */
-  z-index: 50;
-  background: #fff;
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.15);
-  display: flex;
-  align-items: center;
-  gap: 8px;               /* space between buttons/inputs */
-}
-
-  #toolbar label{margin-left:8px}
-  canvas#canvas{position:absolute;left:0;top:0}
-  canvas#minimap{position:fixed;right:10px;bottom:10px;border:1px solid #999;background:#fff;z-index:60}
-  #nodeMenu{position:absolute;display:none;background:#fff;border:1px solid #666;padding:8px;border-radius:6px;z-index:70;min-width:180px}
-  #nodeMenu label{display:inline-block;margin-right:6px}
-  #nodeMenu button#menuClose{position:absolute;top:4px;right:6px;border:none;background:none;font-weight:bold;cursor:pointer}
-  #exportCommentsBtn{position:fixed;right:10px;top:10px;z-index:55}
+  :root{
+    --toolbar-bg:#fff;
+    --toolbar-shadow: 0 4px 14px rgba(10,10,10,0.08);
+    --accent: #3498db;
+    --muted: #666;
+    --node-radius: 25;
+  }
+  html,body{height:100%;margin:0;font-family:Inter,Arial,system-ui,-apple-system,Segoe UI,Roboto; background:#f7f8fb; color:#111}
+  /* Toolbar centered bottom */
+  #toolbar{
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    bottom:12px;
+    display:flex;
+    gap:8px;
+    align-items:center;
+    background:var(--toolbar-bg);
+    padding:8px 10px;
+    border-radius:10px;
+    box-shadow:var(--toolbar-shadow);
+    z-index:60;
+  }
+  #toolbar button, #toolbar select { background:transparent; border:0; padding:6px 8px; cursor:pointer; border-radius:6px; font-size:14px }
+  #toolbar button:hover { background:#f0f4ff }
+  #toolbar .icon { font-size:14px; margin-right:6px }
+  /* Canvas & minimap */
+  canvas#canvas{position:fixed;left:0;top:0}
+  canvas#minimap{position:fixed;right:10px;bottom:10px;border:1px solid #ccc;background:#fff;z-index:70;border-radius:6px;display:none}
+  #exportCommentsBtn{position:fixed;right:10px;top:10px;z-index:55;display:none}
+  /* context menu */
+  #nodeMenu{
+    position:fixed;
+    display:none;
+    background:#fff;
+    border:1px solid #ddd;
+    padding:8px;
+    border-radius:8px;
+    min-width:220px;
+    z-index:120;
+    box-shadow:0 6px 18px rgba(10,10,10,0.08);
+  }
+  #nodeMenu .row{display:flex;gap:8px;align-items:center;margin-top:6px}
+  #nodeMenu .row label{font-size:13px;color:var(--muted);width:60px}
+  #nodeMenu button.small{padding:6px 8px;font-size:13px}
+  #nodeMenu button#menuClose{position:absolute;right:8px;top:6px;border:0;background:transparent;cursor:pointer}
+  /* comment modal */
+  #commentModal{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border:1px solid #ddd;padding:14px;border-radius:8px;z-index:200;box-shadow:0 20px 50px rgba(10,10,10,0.12);width:360px;max-width:95%}
+  #commentEditor{width:100%;height:140px;border:1px solid #eee;padding:8px;border-radius:6px;overflow:auto;background:#fafafa}
+  /* tooltip */
+  .tooltip{position:fixed;padding:6px 10px;background:#222;color:#fff;border-radius:6px;pointer-events:none;z-index:150;display:none;max-width:320px;white-space:pre-wrap}
+  /* utilities */
+  .hidden{display:none}
 </style>
 </head>
 <body>
 
-	<div id="toolbar">
-	  <button id="drawSquareBtn" title="Draw Square">⬛ Square</button>
+  <!-- Toolbar -->
+  <div id="toolbar" aria-label="Graph toolbar">
+    <button id="drawSquareBtn" title="Draw square (grid snapped)"><span class="icon">⬛</span>Square</button>
+    <button id="undoBtn" title="Undo">↩️</button>
+    <button id="redoBtn" title="Redo">↪️</button>
+    <button id="loadGraphBtn" title="Load JSON">📂</button>
+    <button id="saveAllBtn" title="Save JSON">💾</button>
+    <button id="exportPngBtn" title="Export PNG">📤</button>
+    <input id="loadGraphInput" accept=".json" type="file" class="hidden">
+    <span id="modeIndicator" style="font-weight:600;margin-left:8px;font-size:13px;color:var(--muted)">Mode: Normal</span>
+  </div>
 
-	  <input id="nodeColor" type="color" value="#3498db" style="display:none">	<!-- Color -->
-	  
-	  <select id="nodeShape" style="display:none"><option value="circle">Circle</option><option value="square">Square</option><option value="rounded">Rounded</option></select> <!-- Shape -->
-	  
-	  <select id="edgeType" style="display:none"><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="bold">Bold</option></select> <!-- Edge -->
-	  
-	  <button id="connectBtn" style="display:none"></button> <!-- Connect Nodes -->
-	  
-	  <span id="modeIndicator" style="margin-left:8px;font-weight:bold" style="display:none"></span> <!-- Mode: Normal -->
-	  	  
-	  <button id="undoBtn" title="Undo">↩️</button> <!-- Undo -->
-	  
-	  <button id="redoBtn" title="Redo">↪️</button> <!-- Redo -->
-	  
-  	  <button id="loadGraphBtn" title="Load">📂</button>
+  <canvas id="canvas"></canvas>
+  <canvas id="minimap" width="220" height="140"></canvas>
+  <button id="exportCommentsBtn">Export Comments JSON</button>
 
-	  <button id="saveAllBtn" title="Save">💾</button>
+  <!-- Node context menu -->
+  <div id="nodeMenu" role="menu" aria-hidden="true">
+    <button id="menuClose" aria-label="Close menu">✕</button>
+    <div class="row">
+      <label for="menuColor">Color</label>
+      <input id="menuColor" type="color" value="#3498db">
+      <select id="menuShape" title="Shape">
+        <option value="circle">Circle</option>
+        <option value="square">Square</option>
+        <option value="rounded">Rounded</option>
+      </select>
+      <button id="menuDelete" class="small" title="Delete node">🗑️</button>
+    </div>
 
-  	  <button id="exportPngBtn" title="Export PNG">📤</button> <!-- Export PNG -->
-	  
-	  <input type="file" id="loadGraphInput" accept=".json" style="display:none">
-	</div>
+    <div class="row">
+      <label>Arrow</label>
+      <select id="menuEdgeType" title="Edge type">
+        <option value="solid">Solid</option>
+        <option value="dashed">Dashed</option>
+        <option value="bold">Bold</option>
+      </select>
 
-<canvas id="canvas"></canvas>
+      <select id="menuArrowhead" title="Arrowhead">
+        <option value="triangle">Triangle</option>
+        <option value="diamond">Diamond</option>
+        <option value="none">None</option>
+      </select>
+    </div>
 
-<canvas id="minimap" width="200" height="150" style="display:none"></canvas>
+    <div class="row">
+      <label>Title</label>
+      <button id="menuAddTitle" class="small">Add / Edit</button>
+      <select id="menuTitlePos" title="Title pos">
+        <option value="above">Above</option>
+        <option value="inside">Inside</option>
+        <option value="below">Below</option>
+      </select>
+      <button id="menuSeeComments" class="small" title="Notes">📝</button>
+    </div>
+  </div>
 
-<button id="exportCommentsBtn" style="display:none">Export Comments JSON</button>
+  <!-- Comment Modal -->
+  <div id="commentModal" aria-hidden="true">
+    <div style="font-weight:700;margin-bottom:8px">Edit Comment</div>
+    <div id="commentEditor" contenteditable="true" aria-label="Comment editor"></div>
+    <div style="text-align:right;margin-top:8px">
+      <button id="commentCancel">Cancel</button>
+      <button id="commentSave">Save</button>
+    </div>
+  </div>
 
-<!-- Node context menu -->
-<div id="nodeMenu">
-  <button id="menuClose">✕</button>
-  
-  	<!-- Color & Shape -->
-	<div style="margin-top:6px">
-		<input id="menuColor" type="color" title="Color">
-
-		<select id="menuShape"><option value="circle">Circle</option><option value="square">Square</option><option value="rounded">Rounded</option></select>
-		
-		<!-- Delete Node -->
-		<button id="menuDelete" title="Delete">🗑️</button>
-	</div>
-
-	<!-- Arrow -->
-	<div style="margin-top:6px">
-	  <label>Arrow:</label>
-
-	  <select id="menuEdgeType" title="Arrow Type">
-		<option value="solid">Solid</option>
-		<option value="dashed">Dashed</option>
-		<option value="bold">Bold</option>
-	  </select>
-
-	  <select id="menuArrowhead" title="Arrowhead">
-		<option value="triangle">Triangle</option>
-		<option value="diamond">Diamond</option>
-		<option value="none">None</option>
-	  </select>
-	</div>
-
-	<!-- Title -->
-	<div style="margin-top:6px">
-		<button id="menuAddTitle">Title</button>
-		<select id="menuTitlePos"><option value="above">Above</option><option value="inside">Inside</option><option value="below">Below</option></select>
-	</div>
-	
-	<!-- Notes -->
-	<div style="margin-top:6px">
-		<button id="menuSeeComments" title="Notes">📝</button>
-	</div>
-</div>
+  <!-- Tooltip -->
+  <div id="tooltip" class="tooltip"></div>
 
 <script>
-// Query DOM elements (script placed after elements -> safe)
-const canvas = document.getElementById('canvas');
+/* -------------------------
+   Helper & Utility Functions
+   ------------------------- */
+const $ = id => document.getElementById(id);
+const deepClone = v => JSON.parse(JSON.stringify(v));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const devicePixelRatioSafe = () => window.devicePixelRatio || 1;
+
+function saveHistory(){
+  history.push({ nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) });
+  if(history.length > 200) history.shift();
+  redoStack = [];
+}
+
+/* -------------------------
+   DOM refs
+   ------------------------- */
+const canvas = $('canvas');
 const ctx = canvas.getContext('2d');
-const minimap = document.getElementById('minimap');
+const minimap = $('minimap');
 const mctx = minimap.getContext('2d');
-const exportPngBtn = document.getElementById('exportPngBtn');
-const nodeColor = document.getElementById('nodeColor');
-const nodeShape = document.getElementById('nodeShape');
-const edgeTypeSelect = document.getElementById('edgeType');
-const connectBtn = document.getElementById('connectBtn');
-const modeIndicator = document.getElementById('modeIndicator');
-const undoBtn = document.getElementById('undoBtn');
-const redoBtn = document.getElementById('redoBtn');
-const nodeMenu = document.getElementById('nodeMenu');
-const menuColor = document.getElementById('menuColor');
-const menuShape = document.getElementById('menuShape');
-const menuTitlePos = document.getElementById('menuTitlePos');
-const menuAddTitle = document.getElementById('menuAddTitle');
-const menuDelete = document.getElementById('menuDelete');
-const menuClose = document.getElementById('menuClose');
-const exportCommentsBtn = document.getElementById('exportCommentsBtn');
 
-const menuSeeComments = document.getElementById('menuSeeComments');
-const saveAllBtn = document.getElementById('saveAllBtn');
+const drawSquareBtn = $('drawSquareBtn');
+const undoBtn = $('undoBtn');
+const redoBtn = $('redoBtn');
+const loadGraphBtn = $('loadGraphBtn');
+const loadGraphInput = $('loadGraphInput');
+const saveAllBtn = $('saveAllBtn');
+const exportPngBtn = $('exportPngBtn');
+const exportCommentsBtn = $('exportCommentsBtn');
+const modeIndicator = $('modeIndicator');
 
-const loadGraphBtn = document.getElementById('loadGraphBtn');
-const loadGraphInput = document.getElementById('loadGraphInput');
+const nodeMenu = $('nodeMenu');
+const menuColor = $('menuColor');
+const menuShape = $('menuShape');
+const menuEdgeType = $('menuEdgeType');
+const menuArrowhead = $('menuArrowhead');
+const menuDelete = $('menuDelete');
+const menuAddTitle = $('menuAddTitle');
+const menuTitlePos = $('menuTitlePos');
+const menuSeeComments = $('menuSeeComments');
+const menuClose = $('menuClose');
 
-const menuEdgeType = document.getElementById('menuEdgeType');
+const commentModal = $('commentModal');
+const commentEditor = $('commentEditor');
+const commentCancel = $('commentCancel');
+const commentSave = $('commentSave');
 
-const menuArrowhead = document.getElementById('menuArrowhead');
+const tooltip = $('tooltip');
 
-let currentNodeShape = 'circle'; // default node shape
+/* -------------------------
+   State
+   ------------------------- */
+let nodes = []; // {x,y,color,shape,title,titlePos,comment,selectedEdgeType,selectedArrowhead}
+let edges = []; // {from,to,type,arrowhead}
+let history = [];
+let redoStack = [];
+const HISTORY_LIMIT = 200;
 
-// Double left-click to delete node
-let lastLeftClickTime = 0;
+let connecting = false;
+let sourceNode = null;
+let draggingNode = null;
+let dragOffset = {x:0,y:0};
+let justDragged = false;
+
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
+let isPanning = false;
+let panStart = {x:0,y:0};
+
+let menuNodeRef = null;
+let menuNodeIndex = -1;
+let editingNode = null;
+
+/* -------------------------
+   Canvas resize & DPR
+   ------------------------- */
+function resizeCanvas(){
+  const dpr = devicePixelRatioSafe();
+  canvas.width = Math.round(window.innerWidth * dpr);
+  canvas.height = Math.round(window.innerHeight * dpr);
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+/* -------------------------
+   Coordinate transforms
+   ------------------------- */
+function screenToWorld(clientX, clientY){
+  const rect = canvas.getBoundingClientRect();
+  const cx = clientX - rect.left;
+  const cy = clientY - rect.top;
+  return { x: (cx - offsetX) / scale, y: (cy - offsetY) / scale };
+}
+function worldToScreen(wx, wy){
+  return { x: wx * scale + offsetX, y: wy * scale + offsetY };
+}
+
+/* -------------------------
+   History (undo/redo)
+   ------------------------- */
+function pushHistory(){
+  history.push({ nodes: deepClone(nodes), edges: deepClone(edges) });
+  if(history.length > HISTORY_LIMIT) history.shift();
+  redoStack = [];
+}
+
+function undo(){
+  if(history.length === 0) return;
+  redoStack.push({ nodes: deepClone(nodes), edges: deepClone(edges) });
+  const prev = history.pop();
+  nodes = prev.nodes;
+  edges = prev.edges;
+}
+function redo(){
+  if(redoStack.length === 0) return;
+  history.push({ nodes: deepClone(nodes), edges: deepClone(edges) });
+  const next = redoStack.pop();
+  nodes = next.nodes;
+  edges = next.edges;
+}
+
+/* -------------------------
+   Drawing helpers
+   ------------------------- */
+function drawGrid(ctxLocal, width, height, gridSize = 50){
+  ctxLocal.save();
+  ctxLocal.strokeStyle = '#eef1f7';
+  ctxLocal.lineWidth = 1;
+  ctxLocal.beginPath();
+  // compute start positions relative to offset & scale
+  const startX = -offsetX % (gridSize * scale);
+  const startY = -offsetY % (gridSize * scale);
+  for(let x = startX; x < width; x += gridSize * scale){
+    ctxLocal.moveTo(Math.round(x)+0.5, 0);
+    ctxLocal.lineTo(Math.round(x)+0.5, height);
+  }
+  for(let y = startY; y < height; y += gridSize * scale){
+    ctxLocal.moveTo(0, Math.round(y)+0.5);
+    ctxLocal.lineTo(width, Math.round(y)+0.5);
+  }
+  ctxLocal.stroke();
+  ctxLocal.restore();
+}
+
+function drawNodeOnCtx(ctxLocal, n){
+  const r = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--node-radius')) || 25;
+  ctxLocal.fillStyle = n.color || '#3498db';
+  ctxLocal.strokeStyle = '#333';
+  ctxLocal.lineWidth = 2 / Math.max(0.4, scale);
+
+  if(n.shape === 'circle'){
+    ctxLocal.beginPath();
+    ctxLocal.arc(n.x, n.y, r, 0, Math.PI*2);
+    ctxLocal.fill();
+    ctxLocal.stroke();
+  } else if(n.shape === 'square'){
+    ctxLocal.beginPath();
+    ctxLocal.rect(n.x-r, n.y-r, r*2, r*2);
+    ctxLocal.fill();
+    ctxLocal.stroke();
+  } else { // rounded
+    const rx = r*2, ry = r*2, rad = 10;
+    const x = n.x - rx/2, y = n.y - ry/2;
+    ctxLocal.beginPath();
+    ctxLocal.moveTo(x + rad, y);
+    ctxLocal.lineTo(x + rx - rad, y);
+    ctxLocal.quadraticCurveTo(x + rx, y, x + rx, y + rad);
+    ctxLocal.lineTo(x + rx, y + ry - rad);
+    ctxLocal.quadraticCurveTo(x + rx, y + ry, x + rx - rad, y + ry);
+    ctxLocal.lineTo(x + rad, y + ry);
+    ctxLocal.quadraticCurveTo(x, y + ry, x, y + ry - rad);
+    ctxLocal.lineTo(x, y + rad);
+    ctxLocal.quadraticCurveTo(x, y, x + rad, y);
+    ctxLocal.fill();
+    ctxLocal.stroke();
+  }
+
+  // title
+  if(n.title){
+    const fontSize = Math.max(12, 14 / Math.max(0.5, scale));
+    ctxLocal.font = `${fontSize}px sans-serif`;
+    ctxLocal.fillStyle = '#000';
+    ctxLocal.textAlign = 'center';
+    ctxLocal.textBaseline = 'middle';
+    let ty = n.y;
+    if(n.titlePos === 'above') ty = n.y - r - 10;
+    else if(n.titlePos === 'below') ty = n.y + r + 10;
+    ctxLocal.fillText(n.title, n.x, ty);
+  }
+}
+
+function drawArrowhead(ctxLocal, tipX, tipY, ang, type = 'triangle'){
+  ctxLocal.save();
+  ctxLocal.fillStyle = '#000';
+  const size = 12 / Math.max(1, scale); // size scales visually
+  ctxLocal.beginPath();
+  if(type === 'triangle'){
+    const leftX = tipX - size * Math.cos(ang - Math.PI / 6);
+    const leftY = tipY - size * Math.sin(ang - Math.PI / 6);
+    const rightX = tipX - size * Math.cos(ang + Math.PI / 6);
+    const rightY = tipY - size * Math.sin(ang + Math.PI / 6);
+    ctxLocal.moveTo(tipX, tipY);
+    ctxLocal.lineTo(leftX, leftY);
+    ctxLocal.lineTo(rightX, rightY);
+    ctxLocal.closePath();
+    ctxLocal.fill();
+  } else if(type === 'diamond'){
+    const backX = tipX - size * Math.cos(ang);
+    const backY = tipY - size * Math.sin(ang);
+    const leftX = backX - (size / 2) * Math.sin(ang);
+    const leftY = backY + (size / 2) * Math.cos(ang);
+    const rightX = backX + (size / 2) * Math.sin(ang);
+    const rightY = backY - (size / 2) * Math.cos(ang);
+    ctxLocal.moveTo(tipX, tipY);
+    ctxLocal.lineTo(leftX, leftY);
+    ctxLocal.lineTo(backX, backY);
+    ctxLocal.lineTo(rightX, rightY);
+    ctxLocal.closePath();
+    ctxLocal.fill();
+  }
+  ctxLocal.restore();
+}
+
+function drawEdgesOnCtx(ctxLocal){
+  const nodeR = 25;
+  for(const e of edges){
+    const a = nodes[e.from], b = nodes[e.to];
+    if(!a || !b) continue;
+    ctxLocal.save();
+
+    ctxLocal.lineWidth = (e.type === 'bold' ? 4 : 2) / Math.max(0.4, scale);
+    if(e.type === 'dashed') ctxLocal.setLineDash([10/scale, 8/scale]);
+    else ctxLocal.setLineDash([]);
+
+    const ang = Math.atan2(b.y - a.y, b.x - a.x);
+    // shorten line so arrow tip sits at node border
+    const tipX = b.x - nodeR * Math.cos(ang);
+    const tipY = b.y - nodeR * Math.sin(ang);
+
+    // start from node border as well
+    const startX = a.x + nodeR * Math.cos(ang);
+    const startY = a.y + nodeR * Math.sin(ang);
+
+    ctxLocal.strokeStyle = '#000';
+    ctxLocal.beginPath();
+    ctxLocal.moveTo(startX, startY);
+    ctxLocal.lineTo(tipX, tipY);
+    ctxLocal.stroke();
+
+    if(e.arrowhead && e.arrowhead !== 'none'){
+      drawArrowhead(ctxLocal, tipX, tipY, ang, e.arrowhead);
+    }
+
+    ctxLocal.restore();
+  }
+}
+
+/* -------------------------
+   Main render loop
+   ------------------------- */
+let lastRenderTime = 0;
+function renderLoop(time){
+  // throttle render if needed
+  const dpr = devicePixelRatioSafe();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // draw grid on screen-space to align with pixels
+  drawGrid(ctx, canvas.width / dpr, canvas.height / dpr, 50);
+
+  ctx.save();
+  // world transform (scale then translate)
+  ctx.setTransform(scale * dpr, 0, 0, scale * dpr, offsetX * dpr, offsetY * dpr);
+
+  // highlight source node if connecting
+  if(sourceNode){
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(sourceNode.x, sourceNode.y, 35, 0, Math.PI * 2);
+    ctx.strokeStyle = 'orange';
+    ctx.lineWidth = 4 / Math.max(0.5, scale);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawEdgesOnCtx(ctx);
+  for(const n of nodes) drawNodeOnCtx(ctx, n);
+
+  ctx.restore();
+
+  // request next frame
+  requestAnimationFrame(renderLoop);
+}
+requestAnimationFrame(renderLoop);
+
+/* -------------------------
+   Minimap rendering
+   ------------------------- */
+function renderMinimap(){
+  if(minimap.style.display === 'none') return;
+  const w = minimap.width, h = minimap.height;
+  mctx.clearRect(0,0,w,h);
+  if(nodes.length === 0) {
+    mctx.fillStyle = '#fafafa';
+    mctx.fillRect(0,0,w,h);
+    mctx.fillStyle = '#999';
+    mctx.fillText('No nodes', 10, 20);
+    return;
+  }
+
+  // world bounds
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for(const n of nodes){ minX = Math.min(minX, n.x); minY = Math.min(minY, n.y); maxX = Math.max(maxX, n.x); maxY = Math.max(maxY, n.y); }
+  const pad = 40;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  const worldW = Math.max(1, maxX - minX), worldH = Math.max(1, maxY - minY);
+  const sx = w / worldW, sy = h / worldH;
+  const s = Math.min(sx, sy);
+
+  mctx.save();
+  mctx.scale(s, s);
+  mctx.translate(-minX, -minY);
+  mctx.fillStyle = '#f3f6fb';
+  mctx.fillRect(minX, minY, worldW, worldH);
+
+  // nodes
+  for(const n of nodes){
+    mctx.beginPath();
+    mctx.fillStyle = n.color || '#3498db';
+    mctx.arc(n.x, n.y, 6, 0, Math.PI*2);
+    mctx.fill();
+  }
+
+  // viewport rect
+  const vx = (-offsetX) / scale;
+  const vy = (-offsetY) / scale;
+  const vw = (canvas.width / devicePixelRatioSafe()) / scale;
+  const vh = (canvas.height / devicePixelRatioSafe()) / scale;
+
+  mctx.strokeStyle = '#d33';
+  mctx.lineWidth = 2 / s;
+  mctx.strokeRect(vx, vy, vw, vh);
+  mctx.restore();
+}
+setInterval(renderMinimap, 450); // occasional update
+
+/* -------------------------
+   Interaction: create, select, connect, pan, drag
+   ------------------------- */
+function findNodeAt(worldP, radius = 30){
+  for(let i = nodes.length - 1; i >= 0; i--){
+    const n = nodes[i];
+    if(Math.hypot(worldP.x - n.x, worldP.y - n.y) < radius) return { node: n, index: i };
+  }
+  return null;
+}
+
+canvas.addEventListener('click', (ev) => {
+  // single click: create node if not clicked on node; or handle connect logic
+  if(draggingNode) return;
+  if(justDragged){ justDragged = false; return; }
+
+  const p = screenToWorld(ev.clientX, ev.clientY);
+  const hit = findNodeAt(p);
+  if(hit){
+    // node clicked
+    const clicked = hit.node;
+    const clickedIndex = hit.index;
+    if(!sourceNode){
+      // mark source for connecting
+      sourceNode = clicked;
+      sourceNode._origColor = sourceNode._origColor || sourceNode.color;
+      sourceNode.color = '#ffeb3b';
+      modeIndicator.textContent = 'Mode: Select source (click target to connect)';
+      return;
+    }
+    // if clicking same node, deselect
+    if(sourceNode === clicked){
+      sourceNode.color = sourceNode._origColor || sourceNode.color;
+      delete sourceNode._origColor;
+      sourceNode = null;
+      modeIndicator.textContent = 'Mode: Normal';
+      return;
+    }
+    // create edge from sourceNode to clicked (store indices)
+    pushHistory();
+    edges.push({
+      from: nodes.indexOf(sourceNode),
+      to: clickedIndex,
+      type: sourceNode.selectedEdgeType || menuEdgeType.value || 'solid',
+      arrowhead: sourceNode.selectedArrowhead || menuArrowhead.value || 'triangle'
+    });
+    // restore color & clear source
+    if(sourceNode){ sourceNode.color = sourceNode._origColor || sourceNode.color; delete sourceNode._origColor; }
+    sourceNode = null;
+    modeIndicator.textContent = 'Mode: Normal';
+    return;
+  }
+
+  // no node clicked: create new node (grid snap)
+  if(connecting) { /* ignore create while in global connect toggle */ return; }
+  pushHistory();
+  const grid = 50;
+  const nx = Math.round(p.x / grid) * grid;
+  const ny = Math.round(p.y / grid) * grid;
+  nodes.push({
+    x: nx, y: ny,
+    color: '#3498db',
+    shape: 'circle',
+    title: '',
+    titlePos: 'above',
+    comment: '',
+    selectedEdgeType: 'solid',
+    selectedArrowhead: 'triangle'
+  });
+});
+
+/* mousedown: start dragging node (left), or start panning (middle/right) */
+canvas.addEventListener('mousedown', (ev) => {
+  const p = screenToWorld(ev.clientX, ev.clientY);
+  if(ev.button === 0){
+    // left button: try pick node
+    const hit = findNodeAt(p);
+    if(hit){
+      draggingNode = hit.node;
+      dragOffset.x = p.x - draggingNode.x;
+      dragOffset.y = p.y - draggingNode.y;
+      return;
+    }
+  }
+  // middle or right: pan
+  if(ev.button === 1 || ev.button === 2){
+    isPanning = true;
+    panStart.x = ev.clientX - offsetX;
+    panStart.y = ev.clientY - offsetY;
+    if(ev.button === 2) ev.preventDefault();
+  }
+});
+
+/* mousemove: dragging or panning; show tooltip for comments */
+canvas.addEventListener('mousemove', (ev) => {
+  const p = screenToWorld(ev.clientX, ev.clientY);
+  if(draggingNode){
+    const newX = p.x - dragOffset.x;
+    const newY = p.y - dragOffset.y;
+    if(Math.hypot(newX - draggingNode.x, newY - draggingNode.y) > 2) justDragged = true;
+    draggingNode.x = newX;
+    draggingNode.y = newY;
+    return;
+  }
+  if(isPanning){
+    offsetX = ev.clientX - panStart.x;
+    offsetY = ev.clientY - panStart.y;
+    return;
+  }
+
+  // tooltip for comments
+  const hit = findNodeAt(p);
+  if(hit && hit.node.comment){
+    tooltip.style.left = (ev.clientX + 12) + 'px';
+    tooltip.style.top = (ev.clientY + 12) + 'px';
+    tooltip.innerText = hit.node.comment;
+    tooltip.style.display = 'block';
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+
+canvas.addEventListener('mouseup', (ev) => {
+  if(draggingNode){
+    // snap to grid on drop
+    const grid = 50;
+    draggingNode.x = Math.round(draggingNode.x / grid) * grid;
+    draggingNode.y = Math.round(draggingNode.y / grid) * grid;
+    pushHistory();
+  }
+  draggingNode = null;
+  isPanning = false;
+  if(justDragged){
+    setTimeout(()=> justDragged = false, 40);
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  tooltip.style.display = 'none';
+  draggingNode = null;
+  isPanning = false;
+});
+
+/* context menu (right click) - open node menu or delete edge if clicked on edge */
+canvas.addEventListener('contextmenu', (ev) => {
+  ev.preventDefault();
+  const p = screenToWorld(ev.clientX, ev.clientY);
+  // node?
+  const hit = findNodeAt(p);
+  if(hit){
+    showMenuForNode(hit.node, ev.clientX, ev.clientY, hit.index);
+    return;
+  }
+  // else check for edge click: nearest distance to segment
+  const threshold = 10 / Math.max(0.5, scale);
+  for(let j = edges.length - 1; j >= 0; j--){
+    const e = edges[j];
+    const a = nodes[e.from], b = nodes[e.to];
+    if(!a || !b) continue;
+    const A = {x:a.x,y:a.y}, B={x:b.x,y:b.y}, P=p;
+    const AB = {x: B.x-A.x, y: B.y-A.y}, AP = {x:P.x-A.x, y:P.y-A.y};
+    const ab2 = AB.x*AB.x + AB.y*AB.y;
+    let t = (AP.x * AB.x + AP.y * AB.y) / ab2;
+    t = Math.max(0, Math.min(1, t));
+    const closest = { x: A.x + AB.x * t, y: A.y + AB.y * t };
+    const dist = Math.hypot(P.x - closest.x, P.y - closest.y);
+    if(dist < threshold){
+      pushHistory();
+      edges.splice(j,1); // delete edge
+      hideMenu();
+      return;
+    }
+  }
+  hideMenu();
+});
 
 canvas.addEventListener('dblclick', (e) => {
   if (e.button !== 0) return; // left button only
@@ -155,7 +666,7 @@ canvas.addEventListener('dblclick', (e) => {
     const n = nodes[i];
     if (Math.hypot(p.x - n.x, p.y - n.y) < 30) {
       // Delete node
-      saveHistory();
+      pushHistory();
       // Remove connected edges
       for (let j = edges.length - 1; j >= 0; j--) {
         if (edges[j].from === i || edges[j].to === i) edges.splice(j, 1);
@@ -169,53 +680,147 @@ canvas.addEventListener('dblclick', (e) => {
   }
 });
 
-menuArrowhead.addEventListener('change', () => {
-  if (!menuNodeRef) return;
-  menuNodeRef.selectedArrowhead = menuArrowhead.value; // save temporarily
+/* -------------------------
+   Node Menu actions
+   ------------------------- */
+function showMenuForNode(node, clientX, clientY, index){
+  menuColor.value = node.color || '#3498db';
+  menuShape.value = node.shape || 'circle';
+  menuTitlePos.value = node.titlePos || 'above';
+  menuEdgeType.value = node.selectedEdgeType || 'solid';
+  menuArrowhead.value = node.selectedArrowhead || 'triangle';
+
+  menuNodeRef = node;
+  menuNodeIndex = index;
+  nodeMenu.style.left = clientX + 'px';
+  nodeMenu.style.top = clientY + 'px';
+  nodeMenu.style.display = 'block';
+  nodeMenu.setAttribute('aria-hidden', 'false');
+}
+
+function hideMenu(){
+  nodeMenu.style.display = 'none';
+  nodeMenu.setAttribute('aria-hidden', 'true');
+  menuNodeRef = null;
+  menuNodeIndex = -1;
+}
+
+menuClose.addEventListener('click', hideMenu);
+
+// delete node via menu
+menuDelete.addEventListener('click', () => {
+  if(menuNodeRef && menuNodeIndex >= 0){
+    pushHistory();
+    // remove edges linking to this node
+    for(let j = edges.length - 1; j >= 0; j--){
+      if(edges[j].from === menuNodeIndex || edges[j].to === menuNodeIndex) edges.splice(j,1);
+    }
+    nodes.splice(menuNodeIndex, 1);
+    hideMenu();
+  }
 });
 
+// color change
+menuColor.addEventListener('input', () => {
+  if(!menuNodeRef) return;
+  pushHistory();
+  menuNodeRef.color = menuColor.value;
+});
+
+// shape change
+menuShape.addEventListener('change', () => {
+  if(!menuNodeRef) return;
+  pushHistory();
+  menuNodeRef.shape = menuShape.value;
+});
+
+// edge type & arrow selection are stored on node to be used when connecting
 menuEdgeType.addEventListener('change', () => {
-  if (!menuNodeRef) return;
-  // Store the chosen type in a temporary property for connection
+  if(!menuNodeRef) return;
   menuNodeRef.selectedEdgeType = menuEdgeType.value;
 });
-
-loadGraphBtn.addEventListener('click', () => {
-  loadGraphInput.click(); // open file dialog
+menuArrowhead.addEventListener('change', () => {
+  if(!menuNodeRef) return;
+  menuNodeRef.selectedArrowhead = menuArrowhead.value;
 });
 
-loadGraphInput.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+// add title
+menuAddTitle.addEventListener('click', () => {
+  if(!menuNodeRef) return;
+  const t = prompt('Enter title', menuNodeRef.title || '');
+  pushHistory();
+  menuNodeRef.title = t || '';
+  menuNodeRef.titlePos = menuTitlePos.value || 'above';
+  hideMenu();
+});
 
+// comments: open modal
+menuSeeComments.addEventListener('click', () => {
+  if(!menuNodeRef) return;
+  editingNode = menuNodeRef;
+  commentEditor.innerText = menuNodeRef.comment || '';
+  commentModal.style.display = 'block';
+  hideMenu();
+});
+
+/* comment modal actions */
+commentCancel.addEventListener('click', ()=>{ commentModal.style.display = 'none'; editingNode = null; });
+commentSave.addEventListener('click', () => {
+  if(!editingNode) return;
+  pushHistory();
+  editingNode.comment = commentEditor.innerText || '';
+  commentModal.style.display = 'none';
+  editingNode = null;
+});
+
+/* close menu on outside click */
+document.addEventListener('mousedown', (ev) => {
+  if(nodeMenu.style.display === 'block'){
+    const rect = nodeMenu.getBoundingClientRect();
+    if(!(ev.clientX >= rect.left && ev.clientX <= rect.right && ev.clientY >= rect.top && ev.clientY <= rect.bottom)){
+      hideMenu();
+    }
+  }
+});
+
+/* -------------------------
+   Export / Import / Save
+   ------------------------- */
+saveAllBtn.addEventListener('click', () => {
+  const data = { nodes: nodes.map(n => ({
+    x:n.x,y:n.y,color:n.color,shape:n.shape,title:n.title,titlePos:n.titlePos,comment:n.comment,selectedEdgeType:n.selectedEdgeType,selectedArrowhead:n.selectedArrowhead
+  })), edges: edges.map(e => ({ from:e.from, to:e.to, type:e.type, arrowhead:e.arrowhead })) };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'graph_data.json';
+  a.click();
+});
+
+loadGraphBtn.addEventListener('click', () => loadGraphInput.click());
+loadGraphInput.addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  if(!file) return;
   const reader = new FileReader();
-  reader.onload = (event) => {
-    try {
-      const data = JSON.parse(event.target.result);
-      if (!data.nodes || !data.edges) throw new Error('Invalid file format');
-      saveHistory();
-
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.nodes || !data.edges) throw new Error('Invalid format');
+      pushHistory();
       nodes = data.nodes.map(n => ({
-        x: n.x,
-        y: n.y,
+        x: n.x, y: n.y,
         color: n.color || '#3498db',
         shape: n.shape || 'circle',
         title: n.title || '',
         titlePos: n.titlePos || 'above',
-        comment: n.comment || ''
+        comment: n.comment || '',
+        selectedEdgeType: n.selectedEdgeType || 'solid',
+        selectedArrowhead: n.selectedArrowhead || 'triangle'
       }));
-
-      edges = data.edges.map(e => ({
-        from: e.from,
-        to: e.to,
-        type: e.type || 'solid'
-      }));
-
-      menuNodeRef = null; menuNodeIndex = -1;
-      render();
-      renderMinimap();
-      alert('Graph loaded successfully!');
-    } catch (err) {
+      edges = data.edges.map(e => ({ from: e.from, to: e.to, type: e.type || 'solid', arrowhead: e.arrowhead || 'triangle' }));
+      hideMenu();
+      alert('Graph loaded successfully');
+    }catch(err){
       alert('Failed to load graph: ' + err.message);
     }
   };
@@ -223,306 +828,113 @@ loadGraphInput.addEventListener('change', (e) => {
   loadGraphInput.value = '';
 });
 
-// Keyboard shortcuts: Ctrl+S = Save, Ctrl+O = Load
-document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 's') {
-    e.preventDefault();
-    saveAllBtn.click();
-  } else if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'o') {
-    e.preventDefault();
-    loadGraphBtn.click();
-  }
-});
-
-saveAllBtn.addEventListener('click', () => {
-  const graphData = {
-    nodes: nodes.map(n => ({
-      x: n.x,
-      y: n.y,
-      color: n.color,
-      shape: n.shape,
-      title: n.title || '',
-      titlePos: n.titlePos || '',
-      comment: n.comment || ''
-    })),
-    edges: edges.map(e => ({
-      from: e.from,
-      to: e.to,
-      type: e.type
-    }))
-  };
-  const jsonStr = JSON.stringify(graphData, null, 2);
-  const blob = new Blob([jsonStr], { type: 'application/json' });
+exportCommentsBtn.addEventListener('click', () => {
+  const out = nodes.map((n,i) => ({ index: i, title: n.title || '', comment: n.comment || '' }));
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'graph_data.json';
+  a.download = 'comments.json';
   a.click();
 });
 
-menuSeeComments.addEventListener('click', () => {
-  if(!menuNodeRef) return;
-  editingNode = menuNodeRef;
-  commentEditor.innerHTML = menuNodeRef.comment || '';
-  commentModal.style.display = 'block';
-  nodeMenu.style.display = 'none';
+/* Export PNG (renders world at DPR) */
+exportPngBtn.addEventListener('click', () => {
+  const dpr = devicePixelRatioSafe();
+  const w = Math.round((canvas.width / dpr) * dpr);
+  const h = Math.round((canvas.height / dpr) * dpr);
+  const tmp = document.createElement('canvas');
+  tmp.width = w; tmp.height = h;
+  const tctx = tmp.getContext('2d');
+  tctx.scale(dpr, dpr);
+
+  // background
+  tctx.fillStyle = '#fff';
+  tctx.fillRect(0,0,canvas.width / dpr, canvas.height / dpr);
+
+  // draw grid
+  drawGrid(tctx, canvas.width / dpr, canvas.height / dpr, 50);
+
+  // world transform
+  tctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+  drawEdgesOnCtx(tctx);
+  for(const n of nodes) drawNodeOnCtx(tctx, n);
+
+  const a = document.createElement('a');
+  a.href = tmp.toDataURL('image/png');
+  a.download = 'graph.png';
+  a.click();
 });
 
-// Resize canvas (DPR-aware)
-function resize(){
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.floor(window.innerWidth * dpr);
-  canvas.height = Math.floor(window.innerHeight * dpr);
-  canvas.style.width = window.innerWidth + 'px';
-  canvas.style.height = window.innerHeight + 'px';
-}
-window.addEventListener('resize', resize); resize();
+/* -------------------------
+   Wheel zooming
+   ------------------------- */
+canvas.addEventListener('wheel', (ev) => {
+  ev.preventDefault();
+  const before = screenToWorld(ev.clientX, ev.clientY);
+  const zoomFactor = ev.deltaY < 0 ? 1.12 : 0.88;
+  scale *= zoomFactor;
+  scale = clamp(scale, 0.2, 4);
+  const after = screenToWorld(ev.clientX, ev.clientY);
+  // adjust offset so point under cursor stays stable
+  offsetX += (after.x - before.x) * scale;
+  offsetY += (after.y - before.y) * scale;
+});
 
-// State
-let nodes = []; // {x,y,color,shape,title,titlePos,comment}
-let edges = []; // {from,to,type}
-let history = [];
-let redoStack = [];
-let connecting = false;
-let sourceNode = null;
-let draggingNode = null;
-let draggingOffset = {x:0,y:0};
-let justDragged = false;
-let scale = 1;
-let offsetX = 0;
-let offsetY = 0;
-let isPanning = false;
-let panStart = {x:0,y:0};
-let menuNodeRef = null; let menuNodeIndex = -1;
+/* -------------------------
+   Undo/Redo & shortcuts
+   ------------------------- */
+undoBtn.addEventListener('click', undo);
+redoBtn.addEventListener('click', redo);
 
-// Helpers
-function screenToWorld(clientX, clientY){
-  const rect = canvas.getBoundingClientRect();
-  const cx = clientX - rect.left; const cy = clientY - rect.top;
-  return { x: (cx - offsetX) / scale, y: (cy - offsetY) / scale };
-}
-
-function saveHistory(){
-  history.push({ nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) });
-  if(history.length > 200) history.shift();
-  redoStack = [];
-}
-function undo(){ if(history.length===0) return; redoStack.push({ nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }); const prev = history.pop(); nodes = prev.nodes.map(n=>Object.assign({},n)); edges = prev.edges.map(e=>Object.assign({},e)); }
-function redo(){ if(redoStack.length===0) return; history.push({ nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }); const next = redoStack.pop(); nodes = next.nodes.map(n=>Object.assign({},n)); edges = next.edges.map(e=>Object.assign({},e)); }
-
-// Drawing
-function drawTitle(n){ if(!n.title) return; const fontSize = Math.max(12, 14 / Math.max(0.5, scale)); ctx.font = fontSize + 'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#000'; let ty = n.y; if(n.titlePos==='above') ty = n.y - 35; else if(n.titlePos==='below') ty = n.y + 35; else ty = n.y; ctx.fillText(n.title, n.x, ty); }
-function drawNode(n){ const r=25; ctx.fillStyle = n.color || '#3498db'; ctx.strokeStyle='#333'; ctx.lineWidth = 2/Math.max(0.5,scale); if(n.shape==='circle'){ ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.fill(); ctx.stroke(); } else if(n.shape==='square'){ ctx.beginPath(); ctx.rect(n.x-r,n.y-r,r*2,r*2); ctx.fill(); ctx.stroke(); } else { const rad=10,w=r*2,h=r*2,x=n.x-w/2,y=n.y-h/2; ctx.beginPath(); ctx.moveTo(x+rad,y); ctx.lineTo(x+w-rad,y); ctx.quadraticCurveTo(x+w,y,x+w,y+rad); ctx.lineTo(x+w,y+h-rad); ctx.quadraticCurveTo(x+w,y+h,x+w-rad,y+h); ctx.lineTo(x+rad,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-rad); ctx.lineTo(x,y+rad); ctx.quadraticCurveTo(x,y,x+rad,y); ctx.fill(); ctx.stroke(); } drawTitle(n); }
-
-function drawEdges() {
-  const nodeRadius = 25; // radius of nodes
-
-  for (const e of edges) {
-    const a = nodes[e.from], b = nodes[e.to];
-    if (!a || !b) continue;
-
-    ctx.save();
-    ctx.lineWidth = (e.type === 'bold') ? 4 / scale : 2 / scale;
-    if (e.type === 'dashed') ctx.setLineDash([10 / scale, 10 / scale]);
-    else ctx.setLineDash([]);
-
-    // Calculate angle
-    const ang = Math.atan2(b.y - a.y, b.x - a.x);
-
-    // Shorten line so arrow tip ends at node border
-    const tipX = b.x - nodeRadius * Math.cos(ang);
-    const tipY = b.y - nodeRadius * Math.sin(ang);
-
-    const startX = a.x;
-    const startY = a.y;
-
-    // Draw line to tipX, tipY
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(tipX, tipY);
-    ctx.strokeStyle = '#000';
-    ctx.stroke();
-
-    // Draw arrowhead
-    const size = 12; // arrowhead size
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-
-    if (e.arrowhead === 'triangle') {
-      const leftX = tipX - size * Math.cos(ang - Math.PI / 6);
-      const leftY = tipY - size * Math.sin(ang - Math.PI / 6);
-      const rightX = tipX - size * Math.cos(ang + Math.PI / 6);
-      const rightY = tipY - size * Math.sin(ang + Math.PI / 6);
-
-      ctx.moveTo(tipX, tipY);
-      ctx.lineTo(leftX, leftY);
-      ctx.lineTo(rightX, rightY);
-      ctx.closePath();
-      ctx.fill();
-    } 
-    else if (e.arrowhead === 'diamond') {
-      const backX = tipX - size * Math.cos(ang);
-      const backY = tipY - size * Math.sin(ang);
-      const leftX = backX - (size / 2) * Math.sin(ang);
-      const leftY = backY + (size / 2) * Math.cos(ang);
-      const rightX = backX + (size / 2) * Math.sin(ang);
-      const rightY = backY - (size / 2) * Math.cos(ang);
-
-      ctx.moveTo(tipX, tipY);
-      ctx.lineTo(leftX, leftY);
-      ctx.lineTo(backX, backY);
-      ctx.lineTo(rightX, rightY);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    ctx.restore();
+document.addEventListener('keydown', (ev) => {
+  if(ev.ctrlKey && !ev.shiftKey && ev.key.toLowerCase() === 's'){
+    ev.preventDefault();
+    saveAllBtn.click();
+  } else if(ev.ctrlKey && !ev.shiftKey && ev.key.toLowerCase() === 'o'){
+    ev.preventDefault();
+    loadGraphBtn.click();
+  } else if((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'z'){
+    ev.preventDefault();
+    if(ev.shiftKey) redo(); else undo();
   }
+});
+
+/* -------------------------
+   Small UI toggles
+   ------------------------- */
+drawSquareBtn.addEventListener('click', () => {
+  // create a grid-snapped square node at center of view
+  const cx = (canvas.width / devicePixelRatioSafe() / 2 - offsetX) / scale;
+  const cy = (canvas.height / devicePixelRatioSafe() / 2 - offsetY) / scale;
+  pushHistory();
+  const grid = 50;
+  nodes.push({
+    x: Math.round(cx / grid) * grid,
+    y: Math.round(cy / grid) * grid,
+    color: '#3498db',
+    shape: 'square',
+    title: '',
+    titlePos: 'above',
+    comment: ''
+  });
+});
+
+/* toggle minimap visibility based on nodes count */
+function updateUIVisibility(){
+  if(nodes.length > 0) minimap.style.display = 'block'; else minimap.style.display = 'none';
+  exportCommentsBtn.style.display = nodes.some(n => n.comment) ? 'block' : 'none';
 }
+setInterval(updateUIVisibility, 400);
 
-function render(){ const dpr = window.devicePixelRatio||1; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,canvas.width/dpr,canvas.height/dpr); // grid
- ctx.save(); ctx.setTransform(1,0,0,1,0,0); const right = canvas.width/dpr, bottom = canvas.height/dpr, gridSize = 50*scale; ctx.strokeStyle='#eee'; ctx.lineWidth=1; ctx.beginPath(); for(let x = -offsetX % gridSize; x < right; x += gridSize){ ctx.moveTo(x,0); ctx.lineTo(x,bottom); } for(let y = -offsetY % gridSize; y < bottom; y += gridSize){ ctx.moveTo(0,y); ctx.lineTo(right,y); } ctx.stroke(); ctx.restore(); // world transform
- ctx.setTransform(scale*dpr,0,0,scale*dpr,offsetX*dpr,offsetY*dpr);
- if(sourceNode){ ctx.save(); ctx.beginPath(); ctx.arc(sourceNode.x, sourceNode.y, 35,0,Math.PI*2); ctx.strokeStyle='orange'; ctx.lineWidth=4/Math.max(0.5,scale); ctx.stroke(); ctx.restore(); }
- drawEdges(); for(const n of nodes) drawNode(n); requestAnimationFrame(render); }
-requestAnimationFrame(render);
+/* -------------------------
+   Initialization
+   ------------------------- */
+pushHistory(); // initial snapshot
+renderMinimap(); // initial minimap
+updateUIVisibility();
 
-function renderMinimap(){ const w=minimap.width,h=minimap.height; mctx.clearRect(0,0,w,h); let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity; for(const n of nodes){ minX=Math.min(minX,n.x); minY=Math.min(minY,n.y); maxX=Math.max(maxX,n.x); maxY=Math.max(maxY,n.y); } if(minX===Infinity){ minX=0; minY=0; maxX=canvas.width/(window.devicePixelRatio||1); maxY=canvas.height/(window.devicePixelRatio||1); } const padding=50; minX-=padding; minY-=padding; maxX+=padding; maxY+=padding; const worldW=maxX-minX, worldH=maxY-minY, sx=w/worldW, sy=h/worldH, ms=Math.min(sx,sy); mctx.save(); mctx.scale(ms,ms); mctx.translate(-minX,-minY); mctx.fillStyle='#f0f0f0'; mctx.fillRect(minX,minY,worldW,worldH); for(const n of nodes){ mctx.beginPath(); mctx.fillStyle=n.color; mctx.arc(n.x,n.y,6,0,Math.PI*2); mctx.fill(); } const vx=(-offsetX)/scale, vy=(-offsetY)/scale, vw=(canvas.width/(window.devicePixelRatio||1))/scale, vh=(canvas.height/(window.devicePixelRatio||1))/scale; mctx.strokeStyle='red'; mctx.lineWidth=2/ms; mctx.strokeRect(vx,vy,vw,vh); mctx.restore(); requestAnimationFrame(renderMinimap); }
-requestAnimationFrame(renderMinimap);
-
-// Export PNG
-exportPngBtn.addEventListener('click', ()=>{
-  const tmp = document.createElement('canvas'); const dpr = window.devicePixelRatio||1; tmp.width = Math.round((canvas.width/dpr)*dpr); tmp.height = Math.round((canvas.height/dpr)*dpr); const tctx = tmp.getContext('2d'); tctx.scale(dpr,dpr); tctx.fillStyle='#f2f2f2'; tctx.fillRect(0,0,canvas.width/dpr,canvas.height/dpr); tctx.setTransform(scale,0,0,scale,offsetX,offsetY);
-  for(const e of edges){ const a=nodes[e.from], b=nodes[e.to]; if(!a||!b) continue; if(e.type==='dashed') tctx.setLineDash([10,10]); else tctx.setLineDash([]); tctx.lineWidth = (e.type==='bold')?4:2; tctx.beginPath(); tctx.moveTo(a.x,a.y); tctx.lineTo(b.x,b.y); tctx.strokeStyle='#000'; tctx.stroke(); tctx.setLineDash([]); }
-  for(const n of nodes){ tctx.fillStyle=n.color; tctx.strokeStyle='#333'; tctx.lineWidth=2; if(n.shape==='circle'){ tctx.beginPath(); tctx.arc(n.x,n.y,25,0,Math.PI*2); tctx.fill(); tctx.stroke(); } else if(n.shape==='square'){ tctx.beginPath(); tctx.rect(n.x-25,n.y-25,50,50); tctx.fill(); tctx.stroke(); } else { const r=10,size=50,x=n.x-25,y=n.y-25; tctx.beginPath(); tctx.moveTo(x+r,y); tctx.lineTo(x+size-r,y); tctx.quadraticCurveTo(x+size,y,x+size,y+r); tctx.lineTo(x+size,y+size-r); tctx.quadraticCurveTo(x+size,y+size,x+size-r,y+size); tctx.lineTo(x+r,y+size); tctx.quadraticCurveTo(x,y+size,x,y+size-r); tctx.lineTo(x,y+r); tctx.quadraticCurveTo(x,y,x+r,y); tctx.fill(); tctx.stroke(); } }
-  const link = document.createElement('a'); link.download='graph.png'; link.href = tmp.toDataURL('image/png'); link.click();
-});
-
-// Click to create node or select/connect
-canvas.addEventListener('click', (e)=>{
-  if(draggingNode) return; if(justDragged){ justDragged = false; return; }
-  const p = screenToWorld(e.clientX, e.clientY);
-  let clicked=null, clickedIndex=-1; for(let i=nodes.length-1;i>=0;i--){ const n=nodes[i]; if(Math.hypot(p.x-n.x,p.y-n.y)<30){ clicked=n; clickedIndex=i; break; } }
-if(clicked){ 
-  if(!sourceNode){ 
-    // Left-click selects source node
-    sourceNode = clicked; 
-    sourceNode._origColor = sourceNode._origColor || sourceNode.color; 
-    sourceNode.color='#ffeb3b'; 
-    return; 
-  } 
-
-  if(sourceNode===clicked){
-    sourceNode.color = sourceNode._origColor || sourceNode.color;
-    delete sourceNode._origColor;
-    sourceNode=null;
-    return;
-  }
-
-  // Create edge with type from sourceNode.selectedEdgeType or default
-  saveHistory();
-  
-	edges.push({ 
-	  from: nodes.indexOf(sourceNode), 
-	  to: clickedIndex, 
-	  type: sourceNode.selectedEdgeType || edgeTypeSelect.value,
-	  arrowhead: sourceNode.selectedArrowhead || 'triangle'
-	});
-
-  if(sourceNode){ 
-    sourceNode.color = sourceNode._origColor || sourceNode.color; 
-    delete sourceNode._origColor; 
-    //delete sourceNode.selectedEdgeType;
-  }
-  sourceNode=null; 
-  return; 
-}
-  if(connecting) return; saveHistory(); const grid=50; const nx=Math.round(p.x/grid)*grid; const ny=Math.round(p.y/grid)*grid; nodes.push({ x:nx, y:ny, color: nodeColor.value, shape: nodeShape.value });
-});
-
-// Connect button
-connectBtn.addEventListener('click', ()=>{ connecting = !connecting; sourceNode = null; modeIndicator.textContent = connecting ? 'Mode: Connect (click source then target)' : 'Mode: Normal'; });
-
-// Drag & pan handlers
-canvas.addEventListener('mousedown', (e)=>{
-  const p = screenToWorld(e.clientX, e.clientY);
-  if(e.button===0){ for(let i=nodes.length-1;i>=0;i--){ const n=nodes[i]; if(Math.hypot(p.x-n.x,p.y-n.y)<30){ draggingNode = n; draggingOffset.x = p.x - n.x; draggingOffset.y = p.y - n.y; return; } } }
-  if(e.button===1 || e.button===2){ isPanning = true; panStart.x = e.clientX - offsetX; panStart.y = e.clientY - offsetY; if(e.button===2) e.preventDefault(); }
-});
-
-canvas.addEventListener('mousemove', (e)=>{ if(draggingNode){ const p=screenToWorld(e.clientX,e.clientY); const newX=p.x-draggingOffset.x; const newY=p.y-draggingOffset.y; if(Math.hypot(newX-draggingNode.x,newY-draggingNode.y)>2) justDragged=true; draggingNode.x=newX; draggingNode.y=newY; } else if(isPanning){ offsetX = e.clientX - panStart.x; offsetY = e.clientY - panStart.y; } });
-canvas.addEventListener('mouseup',(e)=>{ if(draggingNode){ const grid=50; draggingNode.x=Math.round(draggingNode.x/grid)*grid; draggingNode.y=Math.round(draggingNode.y/grid)*grid; saveHistory(); } draggingNode=null; isPanning=false; if(justDragged){ setTimeout(()=>{ justDragged=false; },50); } });
-canvas.addEventListener('mouseleave', ()=>{ draggingNode=null; isPanning=false; });
-canvas.addEventListener('contextmenu', (e)=> e.preventDefault());
-
-// Right-click handlers (node menu or delete edge)
-canvas.addEventListener('mousedown', (e)=>{ if(e.button!==2) return; const p=screenToWorld(e.clientX,e.clientY); for(let i=nodes.length-1;i>=0;i--){ const n=nodes[i]; if(Math.hypot(p.x-n.x,p.y-n.y)<30){ menuShowForNode(n,e.clientX,e.clientY,i); return; } } const threshold = 10/Math.max(0.5,scale); for(let j=edges.length-1;j>=0;j--){ const eObj=edges[j]; const a=nodes[eObj.from], b=nodes[eObj.to]; if(!a||!b) continue; const A={x:a.x,y:a.y}, B={x:b.x,y:b.y}, P=p; const AB={x:B.x-A.x,y:B.y-A.y}, AP={x:P.x-A.x,y:P.y-A.y}; const ab2=AB.x*AB.x+AB.y*AB.y; let t=(AP.x*AB.x+AP.y*AB.y)/ab2; t=Math.max(0,Math.min(1,t)); const closest={x:A.x+AB.x*t,y:A.y+AB.y*t}; const dist=Math.hypot(P.x-closest.x,P.y-closest.y); if(dist<threshold){ saveHistory(); edges.splice(j,1); return; } } });
-
-function menuShowForNode(node, clientX, clientY, nodeIndex){ menuColor.value = node.color || '#3498db'; menuShape.value = node.shape || 'circle'; menuTitlePos.value = node.titlePos || 'above'; nodeMenu.style.left = clientX + 'px'; nodeMenu.style.top = clientY + 'px'; nodeMenu.style.display = 'block'; menuNodeRef = node; menuNodeIndex = nodeIndex; }
-
-menuClose.addEventListener('click', ()=>{ nodeMenu.style.display='none'; menuNodeRef=null; menuNodeIndex=-1; });
-menuColor.addEventListener('input', ()=>{ if(!menuNodeRef) return; saveHistory(); menuNodeRef.color = menuColor.value; });
-menuShape.addEventListener('change', ()=>{ if(!menuNodeRef) return; saveHistory(); menuNodeRef.shape = menuShape.value; });
-menuDelete.addEventListener('click', ()=>{ if(menuNodeRef && menuNodeIndex>=0){ saveHistory(); for(let j=edges.length-1;j>=0;j--){ if(edges[j].from===menuNodeIndex||edges[j].to===menuNodeIndex) edges.splice(j,1); } nodes.splice(menuNodeIndex,1); } nodeMenu.style.display='none'; menuNodeRef=null; menuNodeIndex=-1; });
-
-menuAddTitle.addEventListener('click', ()=>{ if(!menuNodeRef) return; const t = prompt('Enter title',''); saveHistory(); menuNodeRef.title = t || ''; menuNodeRef.titlePos = menuTitlePos.value || 'above'; nodeMenu.style.display='none'; menuNodeRef=null; menuNodeIndex=-1; });
-
-// Export comments to JSON
-exportCommentsBtn.addEventListener('click', ()=>{ const out = nodes.map((n,i)=>({ index:i, title:n.title||'', comment:n.comment||'' })); const blob = new Blob([JSON.stringify(out,null,2)],{type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'comments.json'; a.click(); });
-
-// Wheel zoom
-canvas.addEventListener('wheel', (ev)=>{ ev.preventDefault(); const before = screenToWorld(ev.clientX, ev.clientY); const zoomFactor = ev.deltaY < 0 ? 1.12 : 0.88; scale *= zoomFactor; scale = Math.max(0.2, Math.min(4, scale)); const after = screenToWorld(ev.clientX, ev.clientY); offsetX += (after.x - before.x) * scale; offsetY += (after.y - before.y) * scale; });
-
-// Undo/Redo buttons
-undoBtn.addEventListener('click', undo); redoBtn.addEventListener('click', redo);
-
-// init history
-saveHistory();
+/* End of script */
 </script>
-<!-- Comment Modal -->
-<div id="commentModal" 
-     style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
-            background:#fff;border:2px solid #444;padding:12px;border-radius:8px;z-index:200;
-            width:320px; min-width:200px; min-height:150px; resize: both; overflow: auto;">
-  <div style="font-weight:bold;margin-bottom:6px">Edit Comment</div>
-	<div contenteditable="true" id="commentEditor"
-		 style="width:100%;height:140px;border:1px solid #aaa;padding:6px;overflow:auto;white-space:pre-wrap;resize:both;">
-	</div>
-  <div style="margin-top:8px;text-align:right">
-    <button id="commentCancel">Cancel</button>
-    <button id="commentSave">Save</button>
-  </div>
-</div>
 
-<script>
-// Tooltip
-const tooltip=document.createElement('div');
-tooltip.style.position='fixed';tooltip.style.padding='6px 10px';tooltip.style.background='#333';tooltip.style.color='#fff';tooltip.style.borderRadius='4px';tooltip.style.pointerEvents='none';tooltip.style.display='none';tooltip.style.zIndex='150';document.body.appendChild(tooltip);
-
-// Modal refs
-const commentModal=document.getElementById('commentModal');
-const commentEditor=document.getElementById('commentEditor');
-const commentCancel=document.getElementById('commentCancel');
-const commentSave=document.getElementById('commentSave');
-let editingNode=null;
-
-commentCancel.onclick=()=>{commentModal.style.display='none';editingNode=null;};
-commentSave.onclick=()=>{
-  if(!editingNode) return;
-  saveHistory();
-  editingNode.comment=commentEditor.innerHTML;
-  commentModal.style.display='none';editingNode=null;
-};
-
-// Hover tooltip for comments
-canvas.addEventListener('mousemove',e=>{
-  const p=screenToWorld(e.clientX,e.clientY);
-  let found=null;
-  for(let i=nodes.length-1;i>=0;i--){const n=nodes[i];if(Math.hypot(p.x-n.x,p.y-n.y)<30){found=n;break;}}
-  if(found&&found.comment){tooltip.innerHTML=found.comment;tooltip.style.left=e.clientX+15+'px';tooltip.style.top=e.clientY+15+'px';tooltip.style.display='block';}
-  else tooltip.style.display='none';
-});
-
-canvas.addEventListener('mouseleave',()=>tooltip.style.display='none');
-</script>
 </body>
 </html>
