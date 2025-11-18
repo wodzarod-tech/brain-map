@@ -31,10 +31,11 @@
   #toolbar button, #toolbar select { background:transparent; border:0; padding:6px 8px; cursor:pointer; border-radius:6px; font-size:14px }
   #toolbar button:hover { background:#f0f4ff }
   #toolbar .icon { font-size:14px; margin-right:6px }
-  /* Canvas & minimap */
+  
+  /* Canvas */
   canvas#canvas{position:fixed;left:0;top:0}
-  canvas#minimap{position:fixed;right:10px;bottom:10px;border:1px solid #ccc;background:#fff;z-index:70;border-radius:6px;display:none}
   #exportCommentsBtn{position:fixed;right:10px;top:10px;z-index:55;display:none}
+  
   /* context menu */
   #nodeMenu{
     position:fixed;
@@ -71,11 +72,9 @@
     <button id="saveAllBtn" title="Save JSON">💾</button>
     <button id="exportPngBtn" title="Export PNG">📤</button>
     <input id="loadGraphInput" accept=".json" type="file" class="hidden">
-    <span id="modeIndicator" style="font-weight:600;margin-left:8px;font-size:13px;color:var(--muted)">Mode: Normal</span>
   </div>
 
   <canvas id="canvas"></canvas>
-  <canvas id="minimap" width="220" height="140"></canvas>
   <button id="exportCommentsBtn">Export Comments JSON</button>
 
   <!-- Node context menu -->
@@ -152,8 +151,6 @@ function saveHistory(){
    ------------------------- */
 const canvas = $('canvas');
 const ctx = canvas.getContext('2d');
-const minimap = $('minimap');
-const mctx = minimap.getContext('2d');
 
 const drawSquareBtn = $('drawSquareBtn');
 const undoBtn = $('undoBtn');
@@ -163,7 +160,6 @@ const loadGraphInput = $('loadGraphInput');
 const saveAllBtn = $('saveAllBtn');
 const exportPngBtn = $('exportPngBtn');
 const exportCommentsBtn = $('exportCommentsBtn');
-const modeIndicator = $('modeIndicator');
 
 const nodeMenu = $('nodeMenu');
 const menuColor = $('menuColor');
@@ -432,57 +428,6 @@ function renderLoop(time){
 requestAnimationFrame(renderLoop);
 
 /* -------------------------
-   Minimap rendering
-   ------------------------- */
-function renderMinimap(){
-  if(minimap.style.display === 'none') return;
-  const w = minimap.width, h = minimap.height;
-  mctx.clearRect(0,0,w,h);
-  if(nodes.length === 0) {
-    mctx.fillStyle = '#fafafa';
-    mctx.fillRect(0,0,w,h);
-    mctx.fillStyle = '#999';
-    mctx.fillText('No nodes', 10, 20);
-    return;
-  }
-
-  // world bounds
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for(const n of nodes){ minX = Math.min(minX, n.x); minY = Math.min(minY, n.y); maxX = Math.max(maxX, n.x); maxY = Math.max(maxY, n.y); }
-  const pad = 40;
-  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
-  const worldW = Math.max(1, maxX - minX), worldH = Math.max(1, maxY - minY);
-  const sx = w / worldW, sy = h / worldH;
-  const s = Math.min(sx, sy);
-
-  mctx.save();
-  mctx.scale(s, s);
-  mctx.translate(-minX, -minY);
-  mctx.fillStyle = '#f3f6fb';
-  mctx.fillRect(minX, minY, worldW, worldH);
-
-  // nodes
-  for(const n of nodes){
-    mctx.beginPath();
-    mctx.fillStyle = n.color || '#3498db';
-    mctx.arc(n.x, n.y, 6, 0, Math.PI*2);
-    mctx.fill();
-  }
-
-  // viewport rect
-  const vx = (-offsetX) / scale;
-  const vy = (-offsetY) / scale;
-  const vw = (canvas.width / devicePixelRatioSafe()) / scale;
-  const vh = (canvas.height / devicePixelRatioSafe()) / scale;
-
-  mctx.strokeStyle = '#d33';
-  mctx.lineWidth = 2 / s;
-  mctx.strokeRect(vx, vy, vw, vh);
-  mctx.restore();
-}
-setInterval(renderMinimap, 450); // occasional update
-
-/* -------------------------
    Interaction: create, select, connect, pan, drag
    ------------------------- */
 function findNodeAt(worldP, radius = 30){
@@ -509,7 +454,6 @@ canvas.addEventListener('click', (ev) => {
       sourceNode = clicked;
       sourceNode._origColor = sourceNode._origColor || sourceNode.color;
       sourceNode.color = '#ffeb3b';
-      modeIndicator.textContent = 'Mode: Select source (click target to connect)';
       return;
     }
     // if clicking same node, deselect
@@ -517,7 +461,6 @@ canvas.addEventListener('click', (ev) => {
       sourceNode.color = sourceNode._origColor || sourceNode.color;
       delete sourceNode._origColor;
       sourceNode = null;
-      modeIndicator.textContent = 'Mode: Normal';
       return;
     }
     // create edge from sourceNode to clicked (store indices)
@@ -531,7 +474,6 @@ canvas.addEventListener('click', (ev) => {
     // restore color & clear source
     if(sourceNode){ sourceNode.color = sourceNode._origColor || sourceNode.color; delete sourceNode._origColor; }
     sourceNode = null;
-    modeIndicator.textContent = 'Mode: Normal';
     return;
   }
 
@@ -919,19 +861,10 @@ drawSquareBtn.addEventListener('click', () => {
   });
 });
 
-/* toggle minimap visibility based on nodes count */
-function updateUIVisibility(){
-  if(nodes.length > 0) minimap.style.display = 'block'; else minimap.style.display = 'none';
-  exportCommentsBtn.style.display = nodes.some(n => n.comment) ? 'block' : 'none';
-}
-setInterval(updateUIVisibility, 400);
-
 /* -------------------------
    Initialization
    ------------------------- */
 pushHistory(); // initial snapshot
-renderMinimap(); // initial minimap
-updateUIVisibility();
 
 /* End of script */
 </script>
