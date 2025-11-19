@@ -204,6 +204,11 @@ let menuNodeRef = null;
 let menuNodeIndex = -1;
 let editingNode = null;
 
+// Edge selection/menu refs
+let menuEdgeRef = null;
+let menuEdgeIndex = -1;
+let selectedEdgeIndex = -1;
+
 /* -------------------------
    Canvas resize & DPR
    ------------------------- */
@@ -358,14 +363,23 @@ function drawArrowhead(ctxLocal, tipX, tipY, ang, type = 'triangle'){
 
 function drawEdgesOnCtx(ctxLocal){
   const nodeR = 25;
-  for(const e of edges){
+  for (let i = 0; i < edges.length; i++) {
+    const e = edges[i];
     const a = nodes[e.from], b = nodes[e.to];
     if(!a || !b) continue;
     ctxLocal.save();
 
-    ctxLocal.lineWidth = (e.type === 'bold' ? 4 : 2) / Math.max(0.4, scale);
-    if(e.type === 'dashed') ctxLocal.setLineDash([10/scale, 8/scale]);
-    else ctxLocal.setLineDash([]);
+    // highlight selected edge
+    if (i === selectedEdgeIndex) {
+      ctxLocal.strokeStyle = 'red';
+      ctxLocal.lineWidth = 6 / Math.max(0.4, scale);
+      ctxLocal.setLineDash([]);
+    } else {
+      ctxLocal.lineWidth = (e.type === 'bold' ? 4 : 2) / Math.max(0.4, scale);
+      if(e.type === 'dashed') ctxLocal.setLineDash([10/scale, 8/scale]);
+      else ctxLocal.setLineDash([]);
+      ctxLocal.strokeStyle = '#000';
+    }
 
     const ang = Math.atan2(b.y - a.y, b.x - a.x);
     // shorten line so arrow tip sits at node border
@@ -376,7 +390,6 @@ function drawEdgesOnCtx(ctxLocal){
     const startX = a.x + nodeR * Math.cos(ang);
     const startY = a.y + nodeR * Math.sin(ang);
 
-    ctxLocal.strokeStyle = '#000';
     ctxLocal.beginPath();
     ctxLocal.moveTo(startX, startY);
     ctxLocal.lineTo(tipX, tipY);
@@ -388,6 +401,38 @@ function drawEdgesOnCtx(ctxLocal){
 
     ctxLocal.restore();
   }
+}
+
+/* -------------------------
+   Hit test for edges
+   ------------------------- */
+function findEdgeAt(p) {
+  const threshold = 10 / Math.max(0.5, scale);
+
+  for (let i = edges.length - 1; i >= 0; i--) {
+    const e = edges[i];
+    const a = nodes[e.from];
+    const b = nodes[e.to];
+    if (!a || !b) continue;
+
+    const A = { x: a.x, y: a.y };
+    const B = { x: b.x, y: b.y };
+    const P = p;
+
+    const AB = { x: B.x - A.x, y: B.y - A.y };
+    const AP = { x: P.x - A.x, y: P.y - A.y };
+    const ab2 = AB.x * AB.x + AB.y * AB.y;
+    if (ab2 === 0) continue;
+
+    let t = (AP.x * AB.x + AP.y * AB.y) / ab2;
+    t = Math.max(0, Math.min(1, t));
+    const closest = { x: A.x + AB.x * t, y: A.y + AB.y * t };
+
+    if (Math.hypot(P.x - closest.x, P.y - closest.y) < threshold) {
+      return { edge: e, index: i };
+    }
+  }
+  return null;
 }
 
 /* -------------------------
@@ -445,8 +490,14 @@ canvas.addEventListener('click', (ev) => {
 
   const p = screenToWorld(ev.clientX, ev.clientY);
   const hit = findNodeAt(p);
+
+  // 1. NODE CLICK ?
   if(hit){
-    // node clicked
+    // clicking node clears edge selection
+    selectedEdgeIndex = -1;
+    menuEdgeRef = null;
+    menuEdgeIndex = -1;
+
     const clicked = hit.node;
     const clickedIndex = hit.index;
     if(!sourceNode){
@@ -477,7 +528,34 @@ canvas.addEventListener('click', (ev) => {
     return;
   }
 
-  // no node clicked: create new node (grid snap)
+  // 2. EDGE CLICK ?
+  const edgeHit = findEdgeAt(p);
+  if(edgeHit){
+    // clear node selection
+    if (sourceNode) {
+      sourceNode.color = sourceNode._origColor || sourceNode.color;
+      delete sourceNode._origColor;
+      sourceNode = null;
+    }
+
+    selectedEdgeIndex = edgeHit.index;
+    showEdgeMenu(ev.clientX, ev.clientY, edgeHit.edge, edgeHit.index);
+    return;
+  }
+
+  // 3. EMPTY CLICK -> create node or clear selections
+  // clear selections
+  selectedEdgeIndex = -1;
+  menuEdgeRef = null;
+  menuEdgeIndex = -1;
+  // also clear node-source selection if any
+  if (sourceNode) {
+    sourceNode.color = sourceNode._origColor || sourceNode.color;
+    delete sourceNode._origColor;
+    sourceNode = null;
+  }
+  hideMenu();
+
   if(connecting) { /* ignore create while in global connect toggle */ return; }
   pushHistory();
   const grid = 50;
@@ -604,21 +682,38 @@ canvas.addEventListener('dblclick', (e) => {
   if (e.button !== 0) return; // left button only
   const p = screenToWorld(e.clientX, e.clientY);
 
-  for (let i = nodes.length - 1; i >= 0; i--) {
-    const n = nodes[i];
-    if (Math.hypot(p.x - n.x, p.y - n.y) < 30) {
-      // Delete node
-      pushHistory();
-      // Remove connected edges
-      for (let j = edges.length - 1; j >= 0; j--) {
-        if (edges[j].from === i || edges[j].to === i) edges.splice(j, 1);
-      }
-      nodes.splice(i, 1);
-      nodeMenu.style.display = 'none';
-      menuNodeRef = null;
-      menuNodeIndex = -1;
-      break;
-    }
+  // 1) Check edges first — delete edge on double-click
+  const edgeHit = findEdgeAt(p);
+  const nodeHit = findNodeAt(p);
+
+  if (edgeHit && !nodeHit) {
+    pushHistory();
+    edges.splice(edgeHit.index, 1);
+    // clear any UI state related to edge selection/menu if you have it:
+    selectedEdge = null;
+    hideMenu();
+    return;
+  }
+  
+  if(nodeHit){
+	  // 2) If no edge, check nodes (existing behaviour)
+	  for (let i = nodes.length - 1; i >= 0; i--) {
+		const n = nodes[i];
+		if (Math.hypot(p.x - n.x, p.y - n.y) < 30) {
+		  // Delete node
+		  pushHistory();
+		  
+		  // Remove connected edges
+		  for (let j = edges.length - 1; j >= 0; j--) {
+			if (edges[j].from === i || edges[j].to === i) edges.splice(j, 1);
+		  }
+		  nodes.splice(i, 1);
+		  nodeMenu.style.display = 'none';
+		  menuNodeRef = null;
+		  menuNodeIndex = -1;
+		  break;
+		}
+	  }
   }
 });
 
@@ -632,12 +727,24 @@ function showMenuForNode(node, clientX, clientY, index){
   menuEdgeType.value = node.selectedEdgeType || 'solid';
   menuArrowhead.value = node.selectedArrowhead || 'triangle';
 
+  // clear edge refs when showing node menu
+  menuEdgeRef = null;
+  menuEdgeIndex = -1;
+  selectedEdgeIndex = -1;
+
   menuNodeRef = node;
   menuNodeIndex = index;
   nodeMenu.style.left = clientX + 'px';
   nodeMenu.style.top = clientY + 'px';
   nodeMenu.style.display = 'block';
   nodeMenu.setAttribute('aria-hidden', 'false');
+
+  // enable node controls
+  menuColor.disabled = false;
+  menuShape.disabled = false;
+  menuAddTitle.disabled = false;
+  menuTitlePos.disabled = false;
+  menuSeeComments.disabled = false;
 }
 
 function hideMenu(){
@@ -645,12 +752,21 @@ function hideMenu(){
   nodeMenu.setAttribute('aria-hidden', 'true');
   menuNodeRef = null;
   menuNodeIndex = -1;
+  menuEdgeRef = null;
+  menuEdgeIndex = -1;
 }
 
 menuClose.addEventListener('click', hideMenu);
 
-// delete node via menu
+// delete node via menu (now handles edges too)
 menuDelete.addEventListener('click', () => {
+  if(menuEdgeRef && menuEdgeIndex >= 0){
+    pushHistory();
+    edges.splice(menuEdgeIndex, 1);
+    hideMenu();
+    return;
+  }
+
   if(menuNodeRef && menuNodeIndex >= 0){
     pushHistory();
     // remove edges linking to this node
@@ -659,6 +775,7 @@ menuDelete.addEventListener('click', () => {
     }
     nodes.splice(menuNodeIndex, 1);
     hideMenu();
+    return;
   }
 });
 
@@ -676,14 +793,26 @@ menuShape.addEventListener('change', () => {
   menuNodeRef.shape = menuShape.value;
 });
 
-// edge type & arrow selection are stored on node to be used when connecting
+// edge type & arrow selection are stored either on node (when preparing connections) or on selected edge
 menuEdgeType.addEventListener('change', () => {
-  if(!menuNodeRef) return;
-  menuNodeRef.selectedEdgeType = menuEdgeType.value;
+  if(menuNodeRef){
+    menuNodeRef.selectedEdgeType = menuEdgeType.value;
+    return;
+  }
+  if(menuEdgeRef){
+    pushHistory();
+    menuEdgeRef.type = menuEdgeType.value;
+  }
 });
 menuArrowhead.addEventListener('change', () => {
-  if(!menuNodeRef) return;
-  menuNodeRef.selectedArrowhead = menuArrowhead.value;
+  if(menuNodeRef){
+    menuNodeRef.selectedArrowhead = menuArrowhead.value;
+    return;
+  }
+  if(menuEdgeRef){
+    pushHistory();
+    menuEdgeRef.arrowhead = menuArrowhead.value;
+  }
 });
 
 // add title
@@ -724,6 +853,37 @@ document.addEventListener('mousedown', (ev) => {
     }
   }
 });
+
+/* -------------------------
+   Edge Menu actions (showing menu for edge)
+   ------------------------- */
+function showEdgeMenu(clientX, clientY, edge, index){
+  // clear node refs
+  menuNodeRef = null;
+  menuNodeIndex = -1;
+
+  // set edge refs
+  menuEdgeRef = edge;
+  menuEdgeIndex = index;
+  selectedEdgeIndex = index;
+
+  // position & show menu
+  nodeMenu.style.left = clientX + 'px';
+  nodeMenu.style.top = clientY + 'px';
+  nodeMenu.style.display = 'block';
+  nodeMenu.setAttribute('aria-hidden', 'false');
+
+  // preload edge values
+  menuEdgeType.value = edge.type || 'solid';
+  menuArrowhead.value = edge.arrowhead || 'triangle';
+
+  // disable node-only controls
+  menuColor.disabled = true;
+  menuShape.disabled = true;
+  menuAddTitle.disabled = true;
+  menuTitlePos.disabled = true;
+  menuSeeComments.disabled = true;
+}
 
 /* -------------------------
    Export / Import / Save
