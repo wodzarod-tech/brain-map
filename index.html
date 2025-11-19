@@ -539,7 +539,7 @@ canvas.addEventListener('click', (ev) => {
     }
 
     selectedEdgeIndex = edgeHit.index;
-    showEdgeMenu(ev.clientX, ev.clientY, edgeHit.edge, edgeHit.index);
+    //showEdgeMenu(ev.clientX, ev.clientY, edgeHit.edge, edgeHit.index);
     return;
   }
 
@@ -649,32 +649,21 @@ canvas.addEventListener('mouseleave', () => {
 canvas.addEventListener('contextmenu', (ev) => {
   ev.preventDefault();
   const p = screenToWorld(ev.clientX, ev.clientY);
-  // node?
-  const hit = findNodeAt(p);
-  if(hit){
-    showMenuForNode(hit.node, ev.clientX, ev.clientY, hit.index);
+
+  // 1️⃣ NODE FIRST — ALWAYS
+  const nodeHit = findNodeAt(p);
+  if (nodeHit) {
+    showMenuForNode(nodeHit.node, ev.clientX, ev.clientY, nodeHit.index);
+    return; // IMPORTANT
+  }
+
+  // 2️⃣ EDGE SECOND — ONLY IF NO NODE HIT
+  const edgeHit = findEdgeAt(p);
+  if (edgeHit) {
+    showEdgeMenu(ev.clientX, ev.clientY, edgeHit.edge, edgeHit.index);
     return;
   }
-  // else check for edge click: nearest distance to segment
-  const threshold = 10 / Math.max(0.5, scale);
-  for(let j = edges.length - 1; j >= 0; j--){
-    const e = edges[j];
-    const a = nodes[e.from], b = nodes[e.to];
-    if(!a || !b) continue;
-    const A = {x:a.x,y:a.y}, B={x:b.x,y:b.y}, P=p;
-    const AB = {x: B.x-A.x, y: B.y-A.y}, AP = {x:P.x-A.x, y:P.y-A.y};
-    const ab2 = AB.x*AB.x + AB.y*AB.y;
-    let t = (AP.x * AB.x + AP.y * AB.y) / ab2;
-    t = Math.max(0, Math.min(1, t));
-    const closest = { x: A.x + AB.x * t, y: A.y + AB.y * t };
-    const dist = Math.hypot(P.x - closest.x, P.y - closest.y);
-    if(dist < threshold){
-      pushHistory();
-      edges.splice(j,1); // delete edge
-      hideMenu();
-      return;
-    }
-  }
+
   hideMenu();
 });
 
@@ -682,7 +671,7 @@ canvas.addEventListener('dblclick', (e) => {
   if (e.button !== 0) return; // left button only
   const p = screenToWorld(e.clientX, e.clientY);
 
-  // 1) Check edges first — delete edge on double-click
+  // 1) Check edges first — delete vas.addEventListeneredge on double-click
   const edgeHit = findEdgeAt(p);
   const nodeHit = findNodeAt(p);
 
