@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Graph Editor — Custom Nodes</title>
+<title>Graph Editor — Custom Nodes (with Edge Context Menu)</title>
 <style>
   :root{
     --toolbar-bg:#fff;
@@ -52,6 +52,22 @@
   #nodeMenu .row label{font-size:13px;color:var(--muted);width:60px}
   #nodeMenu button.small{padding:6px 8px;font-size:13px}
   #nodeMenu button#menuClose{position:absolute;right:8px;top:6px;border:0;background:transparent;cursor:pointer}
+  /* edge menu */
+  #edgeMenu{
+    position:fixed;
+    display:none;
+    background:#fff;
+    border:1px solid #ddd;
+    padding:10px;
+    border-radius:8px;
+    min-width:220px;
+    z-index:220;
+    box-shadow:0 6px 18px rgba(10,10,10,0.08);
+  }
+  #edgeMenu .row{display:flex;gap:8px;align-items:center;margin-top:6px}
+  #edgeMenu label{font-size:13px;color:var(--muted);width:60px}
+  #edgeMenu button{padding:6px 8px;font-size:13px}
+  #edgeMenu button#edgeMenuClose{position:absolute;right:8px;top:6px;border:0;background:transparent;cursor:pointer}
   /* comment modal */
   #commentModal{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border:1px solid #ddd;padding:14px;border-radius:8px;z-index:200;box-shadow:0 20px 50px rgba(10,10,10,0.12);width:360px;max-width:95%}
   #commentEditor{width:100%;height:140px;border:1px solid #eee;padding:8px;border-radius:6px;overflow:auto;background:#fafafa}
@@ -118,9 +134,40 @@
     </div>
   </div>
 
+  <!-- Edge context menu (new) -->
+  <div id="edgeMenu" role="menu" aria-hidden="true">
+    <button id="edgeMenuClose" aria-label="Close edge menu">✕</button>
+
+    <div class="row">
+      <label for="edgeColorInput">Color</label>
+      <input id="edgeColorInput" type="color" value="#000000">
+      <button id="edgeDeleteBtn" class="small" title="Delete edge">🗑️</button>
+    </div>
+
+    <div class="row">
+      <label>Arrow</label>
+      <select id="menuEdgeType2" title="Edge type">
+        <option value="solid">Solid</option>
+        <option value="dashed">Dashed</option>
+        <option value="bold">Bold</option>
+      </select>
+
+      <select id="menuArrowhead2" title="Arrowhead">
+        <option value="triangle">Triangle</option>
+        <option value="diamond">Diamond</option>
+        <option value="none">None</option>
+      </select>
+    </div>
+	
+    <div class="row" style="margin-top:8px;">
+      <label>Label</label>
+      <button id="edgeEditTitleBtn" class="small">Add / Edit</button>
+    </div>
+  </div>
+
   <!-- Comment Modal -->
   <div id="commentModal" aria-hidden="true">
-    <div style="font-weight:700;margin-bottom:8px">Edit Comment</div>
+    <div style="font-weight:700;margin-bottom:8px">Edit Comment / Label</div>
     <div id="commentEditor" contenteditable="true" aria-label="Comment editor"></div>
     <div style="text-align:right;margin-top:8px">
       <button id="commentCancel">Cancel</button>
@@ -166,11 +213,20 @@ const menuColor = $('menuColor');
 const menuShape = $('menuShape');
 const menuEdgeType = $('menuEdgeType');
 const menuArrowhead = $('menuArrowhead');
+const menuEdgeType2 = $('menuEdgeType2');
+const menuArrowhead2 = $('menuArrowhead2');
+
 const menuDelete = $('menuDelete');
 const menuAddTitle = $('menuAddTitle');
 const menuTitlePos = $('menuTitlePos');
 const menuSeeComments = $('menuSeeComments');
 const menuClose = $('menuClose');
+
+const edgeMenu = $('edgeMenu');
+const edgeMenuClose = $('edgeMenuClose');
+const edgeColorInput = $('edgeColorInput');
+const edgeEditTitleBtn = $('edgeEditTitleBtn');
+const edgeDeleteBtn = $('edgeDeleteBtn');
 
 const commentModal = $('commentModal');
 const commentEditor = $('commentEditor');
@@ -183,7 +239,7 @@ const tooltip = $('tooltip');
    State
    ------------------------- */
 let nodes = []; // {x,y,color,shape,title,titlePos,comment,selectedEdgeType,selectedArrowhead}
-let edges = []; // {from,to,type,arrowhead}
+let edges = []; // {from,to,type,arrowhead,title,color}
 let history = [];
 let redoStack = [];
 const HISTORY_LIMIT = 200;
@@ -208,6 +264,9 @@ let editingNode = null;
 let menuEdgeRef = null;
 let menuEdgeIndex = -1;
 let selectedEdgeIndex = -1;
+
+// Special: editingEdge is used when opening the comment modal to edit an edge label
+let editingEdge = null;
 
 /* -------------------------
    Canvas resize & DPR
@@ -378,7 +437,7 @@ function drawEdgesOnCtx(ctxLocal){
       ctxLocal.lineWidth = (e.type === 'bold' ? 4 : 2) / Math.max(0.4, scale);
       if(e.type === 'dashed') ctxLocal.setLineDash([10/scale, 8/scale]);
       else ctxLocal.setLineDash([]);
-      ctxLocal.strokeStyle = '#000';
+      ctxLocal.strokeStyle = e.color || '#000';
     }
 
     const ang = Math.atan2(b.y - a.y, b.x - a.x);
@@ -396,7 +455,25 @@ function drawEdgesOnCtx(ctxLocal){
     ctxLocal.stroke();
 
     if(e.arrowhead && e.arrowhead !== 'none'){
+      // for arrowhead, draw filled arrowhead in same color as edge stroke
+      ctxLocal.save();
+      ctxLocal.fillStyle = e.color || '#000';
       drawArrowhead(ctxLocal, tipX, tipY, ang, e.arrowhead);
+      ctxLocal.restore();
+    }
+
+    // edge title (label) centered
+    if (e.title) {
+      const midX = (startX + tipX) / 2;
+      const midY = (startY + tipY) / 2;
+      ctxLocal.save();
+      const fontSize = Math.max(10, 14 / Math.max(0.5, scale));
+      ctxLocal.font = `${fontSize}px sans-serif`;
+      ctxLocal.fillStyle = '#000';
+      ctxLocal.textAlign = 'center';
+      ctxLocal.textBaseline = 'middle';
+      ctxLocal.fillText(e.title, midX, midY - (10 / Math.max(1, scale)));
+      ctxLocal.restore();
     }
 
     ctxLocal.restore();
@@ -520,7 +597,9 @@ canvas.addEventListener('click', (ev) => {
       from: nodes.indexOf(sourceNode),
       to: clickedIndex,
       type: sourceNode.selectedEdgeType || menuEdgeType.value || 'solid',
-      arrowhead: sourceNode.selectedArrowhead || menuArrowhead.value || 'triangle'
+      arrowhead: sourceNode.selectedArrowhead || menuArrowhead.value || 'triangle',
+      title: '',
+      color: '#000000'
     });
     // restore color & clear source
     if(sourceNode){ sourceNode.color = sourceNode._origColor || sourceNode.color; delete sourceNode._origColor; }
@@ -539,7 +618,7 @@ canvas.addEventListener('click', (ev) => {
     }
 
     selectedEdgeIndex = edgeHit.index;
-    //showEdgeMenu(ev.clientX, ev.clientY, edgeHit.edge, edgeHit.index);
+    // we don't auto-open menu on click; contextmenu (right click) opens the edge menu
     return;
   }
 
@@ -555,6 +634,7 @@ canvas.addEventListener('click', (ev) => {
     sourceNode = null;
   }
   hideMenu();
+  hideEdgeMenu();
 
   if(connecting) { /* ignore create while in global connect toggle */ return; }
   pushHistory();
@@ -645,7 +725,7 @@ canvas.addEventListener('mouseleave', () => {
   isPanning = false;
 });
 
-/* context menu (right click) - open node menu or delete edge if clicked on edge */
+/* context menu (right click) - open node menu or edge menu or delete edge if double-clicked */
 canvas.addEventListener('contextmenu', (ev) => {
   ev.preventDefault();
   const p = screenToWorld(ev.clientX, ev.clientY);
@@ -653,6 +733,7 @@ canvas.addEventListener('contextmenu', (ev) => {
   // 1️⃣ NODE FIRST — ALWAYS
   const nodeHit = findNodeAt(p);
   if (nodeHit) {
+    hideEdgeMenu();
     showMenuForNode(nodeHit.node, ev.clientX, ev.clientY, nodeHit.index);
     return; // IMPORTANT
   }
@@ -660,49 +741,51 @@ canvas.addEventListener('contextmenu', (ev) => {
   // 2️⃣ EDGE SECOND — ONLY IF NO NODE HIT
   const edgeHit = findEdgeAt(p);
   if (edgeHit) {
+    hideMenu();
     showEdgeMenu(ev.clientX, ev.clientY, edgeHit.edge, edgeHit.index);
     return;
   }
 
   hideMenu();
+  hideEdgeMenu();
 });
 
 canvas.addEventListener('dblclick', (e) => {
   if (e.button !== 0) return; // left button only
   const p = screenToWorld(e.clientX, e.clientY);
 
-  // 1) Check edges first — delete vas.addEventListeneredge on double-click
+  // 1) Check edges first — delete edge on double-click
   const edgeHit = findEdgeAt(p);
   const nodeHit = findNodeAt(p);
 
   if (edgeHit && !nodeHit) {
     pushHistory();
     edges.splice(edgeHit.index, 1);
-    // clear any UI state related to edge selection/menu if you have it:
-    selectedEdge = null;
+    selectedEdgeIndex = -1;
+    hideEdgeMenu();
     hideMenu();
     return;
   }
   
   if(nodeHit){
-	  // 2) If no edge, check nodes (existing behaviour)
-	  for (let i = nodes.length - 1; i >= 0; i--) {
-		const n = nodes[i];
-		if (Math.hypot(p.x - n.x, p.y - n.y) < 30) {
-		  // Delete node
-		  pushHistory();
-		  
-		  // Remove connected edges
-		  for (let j = edges.length - 1; j >= 0; j--) {
-			if (edges[j].from === i || edges[j].to === i) edges.splice(j, 1);
-		  }
-		  nodes.splice(i, 1);
-		  nodeMenu.style.display = 'none';
-		  menuNodeRef = null;
-		  menuNodeIndex = -1;
-		  break;
-		}
-	  }
+    // 2) If no edge, check nodes (existing behaviour)
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const n = nodes[i];
+      if (Math.hypot(p.x - n.x, p.y - n.y) < 30) {
+        // Delete node
+        pushHistory();
+        
+        // Remove connected edges
+        for (let j = edges.length - 1; j >= 0; j--) {
+          if (edges[j].from === i || edges[j].to === i) edges.splice(j, 1);
+        }
+        nodes.splice(i, 1);
+        nodeMenu.style.display = 'none';
+        menuNodeRef = null;
+        menuNodeIndex = -1;
+        break;
+      }
+    }
   }
 });
 
@@ -804,6 +887,29 @@ menuArrowhead.addEventListener('change', () => {
   }
 });
 
+// edge type & arrow selection are stored either on node (when preparing connections) or on selected edge
+menuEdgeType2.addEventListener('change', () => {
+  if(menuNodeRef){
+    menuNodeRef.selectedEdgeType = menuEdgeType2.value;
+    return;
+  }
+  if(menuEdgeRef){
+    pushHistory();
+    menuEdgeRef.type = menuEdgeType2.value;
+  }
+});
+menuArrowhead2.addEventListener('change', () => {
+  if(menuNodeRef){
+    menuNodeRef.selectedArrowhead = menuArrowhead2.value;
+    return;
+  }
+  if(menuEdgeRef){
+    pushHistory();
+    menuEdgeRef.arrowhead = menuArrowhead2.value;
+  }
+});
+
+
 // add title
 menuAddTitle.addEventListener('click', () => {
   if(!menuNodeRef) return;
@@ -818,19 +924,29 @@ menuAddTitle.addEventListener('click', () => {
 menuSeeComments.addEventListener('click', () => {
   if(!menuNodeRef) return;
   editingNode = menuNodeRef;
+  editingEdge = null;
   commentEditor.innerText = menuNodeRef.comment || '';
   commentModal.style.display = 'block';
   hideMenu();
 });
 
 /* comment modal actions */
-commentCancel.addEventListener('click', ()=>{ commentModal.style.display = 'none'; editingNode = null; });
+commentCancel.addEventListener('click', ()=>{ commentModal.style.display = 'none'; editingNode = null; editingEdge = null; });
 commentSave.addEventListener('click', () => {
-  if(!editingNode) return;
-  pushHistory();
-  editingNode.comment = commentEditor.innerText || '';
-  commentModal.style.display = 'none';
-  editingNode = null;
+  if(editingNode){
+    pushHistory();
+    editingNode.comment = commentEditor.innerText || '';
+    commentModal.style.display = 'none';
+    editingNode = null;
+    return;
+  }
+  if(editingEdge){
+    pushHistory();
+    editingEdge.title = commentEditor.innerText.trim() || '';
+    commentModal.style.display = 'none';
+    editingEdge = null;
+    return;
+  }
 });
 
 /* close menu on outside click */
@@ -841,12 +957,19 @@ document.addEventListener('mousedown', (ev) => {
       hideMenu();
     }
   }
+  if(edgeMenu.style.display === 'block'){
+    const rect2 = edgeMenu.getBoundingClientRect();
+    if(!(ev.clientX >= rect2.left && ev.clientX <= rect2.right && ev.clientY >= rect2.top && ev.clientY <= rect2.bottom)){
+      hideEdgeMenu();
+    }
+  }
 });
 
 /* -------------------------
-   Edge Menu actions (showing menu for edge)
+   Edge Menu actions (new)
    ------------------------- */
 function showEdgeMenu(clientX, clientY, edge, index){
+	debugger;
   // clear node refs
   menuNodeRef = null;
   menuNodeIndex = -1;
@@ -856,15 +979,17 @@ function showEdgeMenu(clientX, clientY, edge, index){
   menuEdgeIndex = index;
   selectedEdgeIndex = index;
 
-  // position & show menu
-  nodeMenu.style.left = clientX + 'px';
-  nodeMenu.style.top = clientY + 'px';
-  nodeMenu.style.display = 'block';
-  nodeMenu.setAttribute('aria-hidden', 'false');
+  // position & show edge menu
+  edgeMenu.style.left = clientX + 'px';
+  edgeMenu.style.top = clientY + 'px';
+  edgeMenu.style.display = 'block';
+  edgeMenu.setAttribute('aria-hidden', 'false');
+
+  edgeColorInput.value = edge.color || '#000000';
 
   // preload edge values
-  menuEdgeType.value = edge.type || 'solid';
-  menuArrowhead.value = edge.arrowhead || 'triangle';
+  menuEdgeType2.value = edge.type || 'solid';
+  menuArrowhead2.value = edge.arrowhead || 'triangle';
 
   // disable node-only controls
   menuColor.disabled = true;
@@ -874,13 +999,49 @@ function showEdgeMenu(clientX, clientY, edge, index){
   menuSeeComments.disabled = true;
 }
 
+function hideEdgeMenu(){
+  edgeMenu.style.display = 'none';
+  edgeMenu.setAttribute('aria-hidden', 'true');
+  menuEdgeRef = null;
+  menuEdgeIndex = -1;
+  selectedEdgeIndex = -1;
+}
+
+edgeMenuClose.addEventListener('click', hideEdgeMenu);
+
+// change edge color
+edgeColorInput.addEventListener('input', () => {
+  if(!menuEdgeRef) return;
+  pushHistory();
+  menuEdgeRef.color = edgeColorInput.value;
+});
+
+// delete edge via edge menu
+edgeDeleteBtn.addEventListener('click', () => {
+  if(menuEdgeRef && menuEdgeIndex >= 0){
+    pushHistory();
+    edges.splice(menuEdgeIndex, 1);
+    hideEdgeMenu();
+  }
+});
+
+// edit edge title opens the same comment modal, but sets editingEdge
+edgeEditTitleBtn.addEventListener('click', () => {
+  if(!menuEdgeRef) return;
+  editingEdge = menuEdgeRef;
+  editingNode = null;
+  commentEditor.innerText = menuEdgeRef.title || '';
+  commentModal.style.display = 'block';
+  hideEdgeMenu();
+});
+
 /* -------------------------
    Export / Import / Save
    ------------------------- */
 saveAllBtn.addEventListener('click', () => {
   const data = { nodes: nodes.map(n => ({
     x:n.x,y:n.y,color:n.color,shape:n.shape,title:n.title,titlePos:n.titlePos,comment:n.comment,selectedEdgeType:n.selectedEdgeType,selectedArrowhead:n.selectedArrowhead
-  })), edges: edges.map(e => ({ from:e.from, to:e.to, type:e.type, arrowhead:e.arrowhead })) };
+  })), edges: edges.map(e => ({ from:e.from, to:e.to, type:e.type, arrowhead:e.arrowhead, title:e.title, color:e.color })) };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -908,8 +1069,9 @@ loadGraphInput.addEventListener('change', (ev) => {
         selectedEdgeType: n.selectedEdgeType || 'solid',
         selectedArrowhead: n.selectedArrowhead || 'triangle'
       }));
-      edges = data.edges.map(e => ({ from: e.from, to: e.to, type: e.type || 'solid', arrowhead: e.arrowhead || 'triangle' }));
+      edges = data.edges.map(e => ({ from: e.from, to: e.to, type: e.type || 'solid', arrowhead: e.arrowhead || 'triangle', title: e.title || '', color: e.color || '#000000' }));
       hideMenu();
+      hideEdgeMenu();
       alert('Graph loaded successfully');
     }catch(err){
       alert('Failed to load graph: ' + err.message);
@@ -1006,7 +1168,9 @@ drawSquareBtn.addEventListener('click', () => {
     shape: 'square',
     title: '',
     titlePos: 'above',
-    comment: ''
+    comment: '',
+    selectedEdgeType: 'solid',
+    selectedArrowhead: 'triangle'
   });
 });
 
