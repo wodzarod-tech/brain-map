@@ -81,7 +81,6 @@
 
   <!-- Toolbar -->
   <div id="toolbar" aria-label="Graph toolbar">
-	<button id="addTextBtn">Text</button>
     <button id="drawSquareBtn" title="Draw square (grid snapped)"><span class="icon">⬛</span>Square</button>
     <button id="undoBtn" title="Undo">↩️</button>
     <button id="redoBtn" title="Redo">↪️</button>
@@ -194,11 +193,6 @@ function saveHistory(){
   redoStack = [];
 }
 
-// Toggle text mode when clicking the button
-document.getElementById("addTextBtn").onclick = () => {
-  textMode = true;
-};
-
 /* -------------------------
    DOM refs
    ------------------------- */
@@ -273,10 +267,6 @@ let selectedEdgeIndex = -1;
 
 // Special: editingEdge is used when opening the comment modal to edit an edge label
 let editingEdge = null;
-
-// Option to add text
-let textMode = false;
-let texts = []; // { x, y, text, color, size, font, style }
 
 /* -------------------------
    Canvas resize & DPR
@@ -549,21 +539,10 @@ function renderLoop(time){
     ctx.restore();
   }
 
-	drawEdgesOnCtx(ctx);
-	for (const n of nodes) drawNodeOnCtx(ctx, n);
+  drawEdgesOnCtx(ctx);
+  for(const n of nodes) drawNodeOnCtx(ctx, n);
 
-	/* 5️⃣ DRAW STORED TEXTS */
-	for (const t of texts) {
-		ctx.save();
-		ctx.fillStyle = t.color;
-		ctx.font = `${t.style} ${t.size}px ${t.font}`;
-		ctx.textAlign = "left";
-		ctx.textBaseline = "top";
-		ctx.fillText(t.text, t.x, t.y);
-		ctx.restore();
-	}
-
-	ctx.restore();  // ← this stays at the end
+  ctx.restore();
 
   // request next frame
   requestAnimationFrame(renderLoop);
@@ -677,27 +656,6 @@ canvas.addEventListener('click', (ev) => {
 /* mousedown: start dragging node (left), or start panning (middle/right) */
 canvas.addEventListener('mousedown', (ev) => {
   const p = screenToWorld(ev.clientX, ev.clientY);
-  
-  // if textMode is ON → ask user for attributes
-  if (textMode && ev.button === 0) {
-	  const x = ev.offsetX;
-	  const y = ev.offsetY;
-
-	  const text = prompt("Enter text:");
-	  if (!text) return;
-
-	  const color = prompt("Color:", "black") || "black";
-	  const size = prompt("Font size (px):", "20") || "20";
-	  const font = prompt("Font family:", "Arial") || "Arial";
-	  const style = prompt("Style (normal, bold, italic):", "normal") || "normal";
-
-	  texts.push({ x, y, text, color, size, font, style });
-
-	  textMode = false; // turn off after placing text
-	  //draw();
-	  return;
-	}
-
   if(ev.button === 0){
     // left button: try pick node
     const hit = findNodeAt(p);
