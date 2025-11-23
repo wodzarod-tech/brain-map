@@ -665,10 +665,18 @@ canvas.addEventListener('pointerdown', (ev) => {
   
   // if click did NOT hit any shape → create a new node (circle) instantly
   if (!selected) {
+    // snap-to-grid
+    let x = pos.x, y = pos.y;
+    
+	if (showGrid) {
+      x = snapToGrid(x);
+      y = snapToGrid(y);
+    }
+	
     const newShape = new Shape(
       shapeType.value,       // rectangle or circle
-      pos.x,            	 // center adjust
-      pos.y,
+      x,            	 	 // center adjust
+      y,
       10,                    // default width
       10,                    // default height
       {
