@@ -164,10 +164,12 @@
 	<div id="toolbar">
 	  <label>Shape:
 		<select id="shapeType">
-		  <option value="rectangle">Rectangle</option>
 		  <option value="circle">Circle</option>
+		  <option value="rectangle">Rectangle</option>
 		</select>
 	  </label>
+
+	  <button id="toggleGridBtn">Hide Grid</button>
 
 	  <button id="clearBtn">Clear</button>
 	  <button id="deleteBtn">Delete Selected</button>
@@ -329,6 +331,8 @@ let dragOffsetX = 0, dragOffsetY = 0;
 
 let editingShape = null;
 
+let showGrid = true; // grid enabled
+
 /* -------------------- Canvas size -------------------- */
 function setCanvasSizeCSS() {
   canvas.style.width = window.innerWidth + 'px';
@@ -336,7 +340,7 @@ function setCanvasSizeCSS() {
   fitCanvas();
 }
 
-// Canvas Auto-scaling
+// canvas auto-scaling
 function fitCanvas() {
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
@@ -348,6 +352,13 @@ function fitCanvas() {
 
 window.addEventListener('resize', setCanvasSizeCSS);
 setCanvasSizeCSS();
+
+// grid toggle
+document.getElementById("toggleGridBtn").addEventListener("click", () => {
+  showGrid = !showGrid;
+  document.getElementById("toggleGridBtn").textContent = showGrid ? "Hide Grid" : "Show Grid";
+  redraw();
+});
 
 // initial redraw
 redraw();
@@ -619,7 +630,7 @@ canvas.addEventListener('pointerdown', (ev) => {
   ev.preventDefault();
   canvas.setPointerCapture(ev.pointerId);
   
-  const pos = screenToCanvas(ev);
+  const pos = screenToCanvas(ev); // autoscaling
 
   activeHandle = null;
   isResizing = false;
@@ -651,14 +662,16 @@ canvas.addEventListener('pointerdown', (ev) => {
     }
   }
   
-  // if click did NOT hit any shape → create a new node instantly
+  // if click did NOT hit any shape → create a new node (circle) instantly
   if (!selected) {
+	//const { x, y } = getCanvasPos(e); // autoscaling
+
     const newShape = new Shape(
       shapeType.value,       // rectangle or circle
-      pos.x - 40,            // center adjust
-      pos.y - 40,
-      80,                    // default width
-      80,                    // default height
+      pos.x,            	 // center adjust
+      pos.y,
+      10,                    // default width
+      10,                    // default height
       {
         fill: "#ffffff",
         border: "solid",
@@ -671,7 +684,7 @@ canvas.addEventListener('pointerdown', (ev) => {
 	shapes.push(newShape);
 	selected = newShape;
 
-	openPanelForShape(selected);
+	//openPanelForShape(selected);
 	redraw();
 	return;   // stop normal drawing logic
   }
@@ -1002,6 +1015,34 @@ function drawRoundedOrPlainRect(ctx, x, y, w, h, radius) {
   ctx.stroke();
 }
 
+// grid: light dots every 10px, stronger dots every 50px
+function drawGrid(ctx, step = 10) {
+  const width = canvas.width;
+  const height = canvas.height;
+
+  ctx.save();
+  ctx.beginPath();
+
+  // small dots every 10px
+  ctx.fillStyle = "#e2e2e2";
+
+  for (let x = 0; x < width; x += step) {
+    for (let y = 0; y < height; y += step) {
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  // stronger dots every 50px
+  ctx.fillStyle = "#c9c9c9";
+  for (let x = 0; x < width; x += 50) {
+    for (let y = 0; y < height; y += 50) {
+      ctx.fillRect(x, y, 1.7, 1.7);
+    }
+  }
+
+  ctx.restore();
+}
+
 /*
 clears the canvas and draw:
   1. All shapes
@@ -1011,25 +1052,37 @@ clears the canvas and draw:
 function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
+  // draw grid behind everything
+  if (showGrid)
+    drawGrid(ctx);
+  
+  // draw shapes
   shapes.forEach(s => {
 	s.draw(ctx, s === selected);
 	renderText(ctx, s);
   });
   
+  // draw temp shape (preview)
   if (tempShape) tempShape.draw(ctx, false);
 }
 
+// coordinate transforms
 function screenToCanvas(e) {
   const r = canvas.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
+  return { 
+    x: e.clientX - r.left,
+	y: e.clientY - r.top
+  };
 }
 
-// Coordinate transforms
 function screenToWorld(clientX, clientY){
   const rect = canvas.getBoundingClientRect();
   const cx = clientX - rect.left;
   const cy = clientY - rect.top;
-  return { x: (cx - offsetX) / scale, y: (cy - offsetY) / scale };
+  return { 
+    x: (cx - offsetX) / scale,
+	y: (cy - offsetY) / scale
+  };
 }
 
 /*
