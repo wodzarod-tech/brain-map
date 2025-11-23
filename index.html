@@ -641,7 +641,8 @@ canvas.addEventListener('pointerdown', (ev) => {
     if (hn) {
       activeHandle = hn;
       isResizing = true;
-      startX = pos.x; startY = pos.y;
+      startX = pos.x;
+	  startY = pos.y;
       return;
     }
   }
@@ -664,8 +665,6 @@ canvas.addEventListener('pointerdown', (ev) => {
   
   // if click did NOT hit any shape → create a new node (circle) instantly
   if (!selected) {
-	//const { x, y } = getCanvasPos(e); // autoscaling
-
     const newShape = new Shape(
       shapeType.value,       // rectangle or circle
       pos.x,            	 // center adjust
@@ -712,8 +711,18 @@ canvas.addEventListener('pointermove', (ev) => {
 
   // for dragging
   if (isDragging && selected) {
-    selected.x = pos.x - dragOffsetX;
-    selected.y = pos.y - dragOffsetY;
+    let newX = pos.x - dragOffsetX;
+    let newY = pos.y - dragOffsetY;
+
+    // snap-to-grid
+    if (showGrid) {
+      newX = snapToGrid(newX);
+      newY = snapToGrid(newY);
+    }
+
+    selected.x = newX;
+    selected.y = newY;
+  
     syncPanelToShape();
     redraw();
     return;
@@ -1043,6 +1052,11 @@ function drawGrid(ctx, step = 10) {
   ctx.restore();
 }
 
+// snap-tp-grid
+function snapToGrid(value, step = 10) {
+  return Math.round(value / step) * step;
+}
+
 /*
 clears the canvas and draw:
   1. All shapes
@@ -1094,6 +1108,12 @@ Resizing Shapes: uses 4 corners handles:
 */
 function resizeShape(shape, handle, mx, my) {
 
+  // snap-to-grid
+  if (showGrid) {
+    mx = snapToGrid(mx);
+    my = snapToGrid(my);
+  }
+  
   // for rectangle
   if (shape.type === 'rectangle') {
     let x = shape.x, y = shape.y, w = shape.w, h = shape.h;
@@ -1129,7 +1149,8 @@ function resizeShape(shape, handle, mx, my) {
     const dx = mx - shape.x;
     const dy = my - shape.y;
     const r = Math.max(2, Math.sqrt(dx*dx + dy*dy));
-    shape.w = r; shape.h = r;
+    shape.w = r;
+	shape.h = r;
   }
 }
 
