@@ -138,6 +138,25 @@
 	gap:8px;
   }
   
+  #panelClose {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+    line-height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: #ff9999; /* red */
+    cursor: pointer;
+  }
+
+  #panelClose:hover {
+    background: #e53939; /* darker red */
+  }
+
   .muted { 
 	color:#666;
 	font-size:12px;
@@ -198,8 +217,10 @@
   <!-- Slide-in Panel for Shape Properties -->
   <div id="panel" aria-hidden="true">
 	
+    <button id="panelClose" title="Close panel">✕</button>
+
 	<div id="toolbar">
-	
+	  
 	  <!-- Left side -->
 	  <div class="left-tools">
 		<label>Shape:
@@ -225,9 +246,6 @@
 
     <header>
       <h3>Shape Properties</h3>
-      <div>
-        <button id="panelClose" title="Close">✕</button>
-      </div>
     </header>
 
     <div class="row">
