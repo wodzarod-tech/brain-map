@@ -145,6 +145,30 @@
 	border-bottom: 2px solid #000;
 	font-weight: bold;
   }
+  
+  .icon-btn {
+    background: #f3f3f3;
+    border: 1px solid #ccc;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon-btn svg {
+    fill: #333;
+  }
+
+  .icon-btn.active {
+    background: #007bff;
+    border-color: #006be6;
+  }
+
+  .icon-btn.active svg {
+    fill: white;
+  }
 </style>
 </head>
 <body>
@@ -169,7 +193,11 @@
 		</select>
 	  </label>
 
-	  <button id="toggleGridBtn">Hide Grid</button>
+	  <button id="toggleGridBtn" class="icon-btn" title="Toggle Grid">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path d="M3 3h4v4H3V3zm7 0h4v4h-4V3zm7 0h4v4h-4V3zM3 10h4v4H3v-4zm7 0h4v4h-4v-4zm7 0h4v4h-4v-4zM3 17h4v4H3v-4zm7 0h4v4h-4v-4zm7 0h4v4h-4v-4z"/>
+        </svg>
+      </button>
 
 	  <button id="clearBtn">Clear</button>
 	  <button id="deleteBtn">Delete Selected</button>
@@ -333,6 +361,11 @@ let editingShape = null;
 
 let showGrid = true; // grid enabled
 
+// connect nodes with edge
+let connecting = false;
+let sourceShape = null;
+let edges = [];
+
 /* -------------------- Canvas size -------------------- */
 function setCanvasSizeCSS() {
   canvas.style.width = window.innerWidth + 'px';
@@ -356,7 +389,13 @@ setCanvasSizeCSS();
 // grid toggle
 document.getElementById("toggleGridBtn").addEventListener("click", () => {
   showGrid = !showGrid;
-  document.getElementById("toggleGridBtn").textContent = showGrid ? "Hide Grid" : "Show Grid";
+  
+  if (showGrid) {
+    toggleGridBtn.classList.add("active");
+  } else {
+    toggleGridBtn.classList.remove("active");
+  }
+  
   redraw();
 });
 
@@ -652,6 +691,8 @@ canvas.addEventListener('pointerdown', (ev) => {
   for (let i = shapes.length - 1; i >= 0; i--) {
     if (shapes[i].contains(pos.x, pos.y)) {
       selected = shapes[i];
+	  
+	  // only reached if NOT in connection mode
       isDragging = true;
       dragOffsetX = pos.x - selected.x;
       dragOffsetY = pos.y - selected.y;
