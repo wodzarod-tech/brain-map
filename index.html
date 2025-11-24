@@ -202,6 +202,33 @@
   .icon-btn.active svg {
     fill: white;
   }
+  
+  /* for tabs **/
+  #panelTabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 10px;
+  }
+
+  #panelTabs .tab {
+    flex: 1;
+    padding: 10px;
+    background: #f4f4f4;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: #444;
+  }
+
+  #panelTabs .tab.active {
+    background: #ffffff;
+    border-bottom: 2px solid #007bff;
+    color: #007bff;
+    font-weight: bold;
+  }
+
+  .tabContent { display: none; }
+  .tabContent.active { display: block; }
 </style>
 </head>
 <body>
@@ -244,102 +271,118 @@
 	  </div>
 	</div>
 
-    <header>
-      <h3>Shape Properties</h3>
-    </header>
-
-    <div class="row">
-  	  <label class="label-line">Shape</label>
-    </div>
-
-    <div class="row">
-      <label>Type</label>
-        <select id="propType" disabled>
-          <option value="rectangle">Rectangle</option>
-          <option value="circle">Circle</option>
-        </select>
-    </div>
-
-    <div class="row">
-      <label>Fill</label>
-      <input id="propFill" type="color">
-    </div>
-
-    <div class="row">
-      <label>Border</label>
-      <select id="propBorder">
-        <option value="solid">Solid</option>
-        <option value="dashed">Dashed</option>
-        <option value="bold">Bold</option>
-      </select>
-    </div>
-
-    <div class="row">
-      <label>Thickness</label>
-      <input id="propThickness" type="number" min="1" max="20" step="1">
-    </div>
-
-    <div class="row">
-      <label>Opacity</label>
-      <input id="propOpacity" type="range" min="0" max="1" step="0.05">
-      <span id="propOpacityVal" class="muted" style="min-width:40px;text-align:right;"></span>
-    </div>
-
-    <div class="row">
-      <label>Rounded</label>
-      <input id="propRounded" type="checkbox" title="Rectangle rounded">
-    </div>
-
-    <div class="row">
-      <label>X</label>
-      <input id="propX" type="number" step="1">
-    </div>
-
-    <div class="row">
-      <label>Y</label>
-      <input id="propY" type="number" step="1">
-    </div>
-
-    <div class="row" id="sizeRow">
-      <label>W</label>
-      <input id="propW" type="number" step="1">
-    </div>
-
-    <div class="row" id="sizeRowH">
-      <label>H / R</label>
-      <input id="propH" type="number" step="1">
-    </div>
-
-    <div class="row">
-    	<label class="label-line">Text</label>
+    <!-- Tabs Header -->
+    <div id="panelTabs">
+      <button class="tab active" data-tab="styleTab">Design</button>
+      <button class="tab" data-tab="textTab">Function</button>
     </div>
   
-    <div class="row">
-      <label>Text</label>
-      <input id="panelText" type="text" placeholder="shape text">
-    </div>
+    <!-- Tab Design -->
+    <div id="styleTab" class="tabContent active">
+  
+		<header>
+		  <h3>Shape Properties</h3>
+		</header>
 
-    <div class="row">
-      <label>Font size</label>
-      <input id="panelTextSize" type="number" min="8" max="72" value="16">
-    </div>
+		<div class="row">
+		  <label class="label-line">Shape</label>
+		</div>
 
-    <div class="row">
-      <label>Text color</label>
-      <input id="panelTextColor" type="color" value="#000000">
-    </div>
+		<div class="row">
+		  <label>Type</label>
+			<select id="propType" disabled>
+			  <option value="rectangle">Rectangle</option>
+			  <option value="circle">Circle</option>
+			</select>
+		</div>
 
-    <div class="row">
-      <label>Text Position:</label>
-	  <select id="textPosition">
-	    <option value="center">Center</option>
-	    <option value="top">Top</option>
-	    <option value="bottom">Bottom</option>
-	    <option value="left">Left</option>
-	    <option value="right">Right</option>
-	  </select>
-    </div>
+		<div class="row">
+		  <label>Fill</label>
+		  <input id="propFill" type="color">
+		</div>
 
+		<div class="row">
+		  <label>Border</label>
+		  <select id="propBorder">
+			<option value="solid">Solid</option>
+			<option value="dashed">Dashed</option>
+			<option value="bold">Bold</option>
+		  </select>
+		</div>
+
+		<div class="row">
+		  <label>Thickness</label>
+		  <input id="propThickness" type="number" min="1" max="20" step="1">
+		</div>
+
+		<div class="row">
+		  <label>Opacity</label>
+		  <input id="propOpacity" type="range" min="0" max="1" step="0.05">
+		  <span id="propOpacityVal" class="muted" style="min-width:40px;text-align:right;"></span>
+		</div>
+
+		<div class="row">
+		  <label>Rounded</label>
+		  <input id="propRounded" type="checkbox" title="Rectangle rounded">
+		</div>
+
+		<div class="row">
+		  <label>X</label>
+		  <input id="propX" type="number" step="1">
+		</div>
+
+		<div class="row">
+		  <label>Y</label>
+		  <input id="propY" type="number" step="1">
+		</div>
+
+		<div class="row" id="sizeRow">
+		  <label>W</label>
+		  <input id="propW" type="number" step="1">
+		</div>
+
+		<div class="row" id="sizeRowH">
+		  <label>H / R</label>
+		  <input id="propH" type="number" step="1">
+		</div>
+
+		<div class="row">
+			<label class="label-line">Text</label>
+		</div>
+	  
+		<div class="row">
+		  <label>Text</label>
+		  <input id="panelText" type="text" placeholder="shape text">
+		</div>
+
+		<div class="row">
+		  <label>Font size</label>
+		  <input id="panelTextSize" type="number" min="8" max="72" value="16">
+		</div>
+
+		<div class="row">
+		  <label>Text color</label>
+		  <input id="panelTextColor" type="color" value="#000000">
+		</div>
+
+		<div class="row">
+		  <label>Text Position:</label>
+		  <select id="textPosition">
+			<option value="center">Center</option>
+			<option value="top">Top</option>
+			<option value="bottom">Bottom</option>
+			<option value="left">Left</option>
+			<option value="right">Right</option>
+		  </select>
+		</div>
+	</div>
+
+	<!-- Tab Functions -->
+	<div id="textTab" class="tabContent">
+	  <header><h3>Text</h3></header>
+	    <p style="color:#777; font-size:14px; margin-top:10px;">(Empty for now)</p>
+	</div>
+	  
     <div class="footer">
       <button id="propApply">Apply</button>
       <button id="propReset">Reset</button>
@@ -674,6 +717,24 @@ function applyPanelToShape(live = true) {
 
   if (live) redraw();
 }
+
+// for switching tabs
+document.querySelectorAll("#panelTabs .tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    
+  document.querySelectorAll("#panelTabs .tab")
+	.forEach(t => t.classList.remove("active"));
+  
+  btn.classList.add("active");
+
+  const tabId = btn.dataset.tab;
+
+  document.querySelectorAll(".tabContent")
+	.forEach(c => c.classList.remove("active"));
+
+  document.getElementById(tabId).classList.add("active");
+  });
+});
 
 // live updates from panel
 propFill.addEventListener('input', () => { if(selected){ selected.opts.fill = propFill.value; redraw(); }});
