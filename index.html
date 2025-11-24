@@ -460,14 +460,41 @@
 
 	<!-- Tab Functions -->
 	<div id="textTab" class="tabContent">
-	<header style="display:flex; align-items:center; justify-content:space-between;">
-		<h3>Info:</h3>
-		<button id="addTextboxBtn" class="icon-btn" title="Add Textbox">＋</button>
-	  </header>
+	
+	  <!-- docs: collapsible wrapper -->
+	  <div id="infoSection" style="
+        border:1px solid #ccc;
+        border-radius:6px;
+        overflow:hidden;
+        margin-bottom:10px;
+      ">
+  
+        <!-- header collapsible -->
+        <div id="infoHeader" style="
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          padding:6px 10px;
+          background:#f1f1f1;
+          cursor:pointer;
+        ">
+          
+          <div style="display:flex; align-items:center; gap:8px;">
+			<span id="infoToggle" style="font-size:13px; opacity:0.7;">▼</span>
+			<h3 style="margin:0; font-size:16px;">Notes</h3>
+		  </div>
+  		  <button id="addTextboxBtn" class="icon-btn" title="Add Textbox">＋</button>
+        </div>
+	
+	    <!-- content -->
+        <div id="infoContent" style="padding:10px; display:block;">
+        <header style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+        </header>
 
-	  <div id="textList" style="margin-top:12px; display:flex; flex-direction:column; gap:10px;"></div>
+	    <div id="textList" style="margin-top:12px; display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
 	</div>
-	  
+	
     <div class="footer">
       <button id="propApply">Apply</button>
       <button id="propReset">Reset</button>
@@ -535,6 +562,11 @@ let showGrid = true; // grid enabled
 let connecting = false;
 let sourceShape = null;
 let edges = [];
+
+// collapse/expand behabior
+const infoHeader = document.getElementById("infoHeader");
+const infoToggle = document.getElementById("infoToggle");
+const infoContent = document.getElementById("infoContent");
 
 /* -------------------- Canvas size -------------------- */
 function setCanvasSizeCSS() {
@@ -826,7 +858,9 @@ document.querySelectorAll("#panelTabs .tab").forEach(btn => {
 });
 
 // Function tab, to add textboxes with delete button each one
-addTextboxBtn.addEventListener("click", () => {
+addTextboxBtn.addEventListener("click", (e) => {
+  e.stopPropagation(); // prevents collapsing
+
   // wrapper
   const wrapper = document.createElement("div");
   wrapper.className = "textbox-wrapper";
@@ -925,6 +959,19 @@ addTextboxBtn.addEventListener("click", () => {
   wrapper.appendChild(body); // add textbox
 
   textList.appendChild(wrapper);
+});
+
+// Fuction / Docs: collapse/expand behabior
+infoHeader.addEventListener("click", () => {
+  const isOpen = infoContent.style.display !== "none";
+
+  if (isOpen) {
+    infoContent.style.display = "none";
+    infoToggle.textContent = "►"; // collapsed
+  } else {
+    infoContent.style.display = "block";
+    infoToggle.textContent = "▼"; // expanded
+  }
 });
 
 // live updates from panel
