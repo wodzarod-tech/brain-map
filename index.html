@@ -242,6 +242,45 @@
 	box-sizing: border-box;
   }
 
+  /* delete textboxes */
+  .textbox-wrapper {
+    position: relative;
+    width: 100%;
+  }
+  
+  .textbox {
+    width: 100%;
+    height: 80px;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    resize: vertical;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+
+  /* delete button */
+  .deleteTextboxBtn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: #e57373;     /* soft red */
+    border: none;
+    color: white;
+    font-size: 12px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    line-height: 16px;
+    text-align: center;
+    padding: 0;
+  }
+
+  .deleteTextboxBtn:hover {
+    background: #d32f2f;   /* slightly stronger tone */
+  }
+
 </style>
 </head>
 <body>
@@ -393,7 +432,7 @@
 	<!-- Tab Functions -->
 	<div id="textTab" class="tabContent">
 	<header style="display:flex; align-items:center; justify-content:space-between;">
-		<h3>Text</h3>
+		<h3>Info:</h3>
 		<button id="addTextboxBtn" class="icon-btn" title="Add Textbox">＋</button>
 	  </header>
 
@@ -757,12 +796,31 @@ document.querySelectorAll("#panelTabs .tab").forEach(btn => {
   });
 });
 
-// Function tab, to add textboxes
+// Function tab, to add textboxes with delete button each one
 addTextboxBtn.addEventListener("click", () => {
+  // wrapper
+  const wrapper = document.createElement("div");
+  wrapper.className = "textbox-wrapper";
+  
+  // create textbox
   const box = document.createElement("textarea");
   box.className = "textbox";
   box.placeholder = "Write here...";
-  textList.appendChild(box);
+  
+  // delete button
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "deleteTextboxBtn";
+  removeBtn.textContent = "×";
+  removeBtn.title = "Remove textbox";
+  
+  // remove textbox
+  removeBtn.addEventListener("click", () => {
+    wrapper.remove();
+  });
+  
+  wrapper.appendChild(box); // add textbox
+  wrapper.appendChild(removeBtn); // add delete button
+  textList.appendChild(wrapper);  
 });
 
 // live updates from panel
