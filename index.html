@@ -229,6 +229,19 @@
 
   .tabContent { display: none; }
   .tabContent.active { display: block; }
+  
+  /* Function tab: add textboxes*/
+  .textbox {
+    width: 100%;
+	height: 80px;
+	padding: 6px;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+	resize: vertical;
+	font-size: 13px;
+	box-sizing: border-box;
+  }
+
 </style>
 </head>
 <body>
@@ -379,8 +392,12 @@
 
 	<!-- Tab Functions -->
 	<div id="textTab" class="tabContent">
-	  <header><h3>Text</h3></header>
-	    <p style="color:#777; font-size:14px; margin-top:10px;">(Empty for now)</p>
+	<header style="display:flex; align-items:center; justify-content:space-between;">
+		<h3>Text</h3>
+		<button id="addTextboxBtn" class="icon-btn" title="Add Textbox">＋</button>
+	  </header>
+
+	  <div id="textList" style="margin-top:12px; display:flex; flex-direction:column; gap:10px;"></div>
 	</div>
 	  
     <div class="footer">
@@ -421,6 +438,10 @@ const panelTextSize = document.getElementById('panelTextSize');
 const panelTextColor = document.getElementById('panelTextColor');
 
 const textEditor = document.getElementById("textEditor");
+
+// for Function tab
+const textList = document.getElementById("textList");
+const addTextboxBtn = document.getElementById("addTextboxBtn");
 
 // main variables
 let shapes = [];         // list of drawn shapes
@@ -734,6 +755,14 @@ document.querySelectorAll("#panelTabs .tab").forEach(btn => {
 
   document.getElementById(tabId).classList.add("active");
   });
+});
+
+// Function tab, to add textboxes
+addTextboxBtn.addEventListener("click", () => {
+  const box = document.createElement("textarea");
+  box.className = "textbox";
+  box.placeholder = "Write here...";
+  textList.appendChild(box);
 });
 
 // live updates from panel
