@@ -872,6 +872,13 @@ addTextboxBtn.addEventListener("click", (e) => {
   const headerLeft = document.createElement("div");
   headerLeft.className = "textbox-header-left";
   
+  // collapse button
+  const collapseBtn = document.createElement("button");
+  collapseBtn.className = "collapseBtn";
+  collapseBtn.textContent = "▼";
+  collapseBtn.style.marginRight = "6px";
+  
+  // title
   const title = document.createElement("span");
   title.contentEditable = "true";
   title.textContent = "Title";
@@ -882,7 +889,7 @@ addTextboxBtn.addEventListener("click", (e) => {
   title.style.textOverflow = "ellipsis";
   title.spellcheck = false;          // optional
   
-  // prevent multiline
+  // prevent title multiline
   title.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -910,14 +917,6 @@ addTextboxBtn.addEventListener("click", (e) => {
     e.stopPropagation();
   });
 
-   // collapse button
-  const collapseBtn = document.createElement("button");
-  collapseBtn.className = "collapseBtn";
-  collapseBtn.textContent = "▼";
-  
-  headerLeft.appendChild(title);
-  headerLeft.appendChild(collapseBtn);
-
   // delete button
   const removeBtn = document.createElement("button");
   removeBtn.className = "deleteTextboxBtn";
@@ -932,9 +931,9 @@ addTextboxBtn.addEventListener("click", (e) => {
   const box = document.createElement("textarea");
   box.className = "textbox";
   box.placeholder = "Write here...";
-  
+
   body.appendChild(box);
-  
+
   // collapse/expand handling
   collapseBtn.addEventListener("click", (ev) => {
     ev.stopPropagation();
@@ -944,14 +943,17 @@ addTextboxBtn.addEventListener("click", (e) => {
       collapseBtn.textContent = "▼";
     } else {
       body.style.display = "none";
-      collapseBtn.textContent = "▲";
+      collapseBtn.textContent = "►";
     }
   });
-	
-  // remove handling
+
   // remove textbox
   removeBtn.addEventListener("click", () => wrapper.remove());
 
+  // order
+  headerLeft.appendChild(collapseBtn);
+  headerLeft.appendChild(title);
+  
   header.appendChild(headerLeft); // add header
   header.appendChild(removeBtn); // add delete button
 
