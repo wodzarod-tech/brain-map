@@ -244,10 +244,28 @@
 
   /* delete textboxes */
   .textbox-wrapper {
-    position: relative;
-    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 6px;
+    margin-bottom: 8px;
+    background: #fafafa;
   }
   
+  .textbox-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  .textbox-body {
+    margin-top: 6px;
+    display: block; /* collapsible */
+  }
+
   .textbox {
     width: 100%;
     height: 80px;
@@ -259,12 +277,17 @@
     box-sizing: border-box;
   }
 
+  .collapseBtn {
+    font-size: 14px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0 4px;
+  }
+
   /* delete button */
-  .deleteTextboxBtn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    background: #e57373;     /* soft red */
+    .deleteTextboxBtn {
+    background: #e57373;
     border: none;
     color: white;
     font-size: 12px;
@@ -272,13 +295,19 @@
     height: 18px;
     border-radius: 50%;
     cursor: pointer;
-    line-height: 16px;
     text-align: center;
     padding: 0;
+    margin-left: 6px;
   }
 
   .deleteTextboxBtn:hover {
     background: #d32f2f;   /* slightly stronger tone */
+  }
+
+  .textbox-header-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
 </style>
@@ -802,25 +831,100 @@ addTextboxBtn.addEventListener("click", () => {
   const wrapper = document.createElement("div");
   wrapper.className = "textbox-wrapper";
   
-  // create textbox
-  const box = document.createElement("textarea");
-  box.className = "textbox";
-  box.placeholder = "Write here...";
+  // header
+  const header = document.createElement("div");
+  header.className = "textbox-header";
   
+  const headerLeft = document.createElement("div");
+  headerLeft.className = "textbox-header-left";
+  
+  const title = document.createElement("span");
+  title.contentEditable = "true";
+  title.textContent = "Title";
+  title.style.outline = "none";      // removes border when editing
+  title.style.cursor = "text";
+  title.style.whiteSpace = "nowrap";
+  title.style.overflow = "hidden";
+  title.style.textOverflow = "ellipsis";
+  title.spellcheck = false;          // optional
+  
+  // prevent multiline
+  title.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      title.blur();
+    }
+  });
+
+  // limit to 30 characters
+  title.addEventListener("input", () => {
+    if (title.textContent.length > 30) {
+      title.textContent = title.textContent.slice(0, 30);
+
+    // move caret to end
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(title);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    }
+  });
+
+  // don't collapse section when clicking title
+  title.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+
+   // collapse button
+  const collapseBtn = document.createElement("button");
+  collapseBtn.className = "collapseBtn";
+  collapseBtn.textContent = "▼";
+  
+  headerLeft.appendChild(title);
+  headerLeft.appendChild(collapseBtn);
+
   // delete button
   const removeBtn = document.createElement("button");
   removeBtn.className = "deleteTextboxBtn";
   removeBtn.textContent = "×";
   removeBtn.title = "Remove textbox";
   
-  // remove textbox
-  removeBtn.addEventListener("click", () => {
-    wrapper.remove();
-  });
+  // body
+  const body = document.createElement("div");
+  body.className = "textbox-body";
   
-  wrapper.appendChild(box); // add textbox
-  wrapper.appendChild(removeBtn); // add delete button
-  textList.appendChild(wrapper);  
+  // create textbox
+  const box = document.createElement("textarea");
+  box.className = "textbox";
+  box.placeholder = "Write here...";
+  
+  body.appendChild(box);
+  
+  // collapse/expand handling
+  collapseBtn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    
+	if (body.style.display === "none") {
+      body.style.display = "block";
+      collapseBtn.textContent = "▼";
+    } else {
+      body.style.display = "none";
+      collapseBtn.textContent = "▲";
+    }
+  });
+	
+  // remove handling
+  // remove textbox
+  removeBtn.addEventListener("click", () => wrapper.remove());
+
+  header.appendChild(headerLeft); // add header
+  header.appendChild(removeBtn); // add delete button
+
+  wrapper.appendChild(header);
+  wrapper.appendChild(body); // add textbox
+
+  textList.appendChild(wrapper);
 });
 
 // live updates from panel
