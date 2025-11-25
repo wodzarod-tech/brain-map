@@ -328,20 +328,21 @@
   /* Left tools */
   .left-tools {
     display: flex;
-    display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 4px;
+	margin-right: auto;   /* keeps them stuck to the left */
   }
 
   /* text button */
   .icon-txt-btn {
-    width: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;       /* or whatever size you want */
     height: 32px;
-    font-size: 20px;
-    border: 1px solid #aaa;
-    background: #fff;
-    cursor: pointer;
-    border-radius: 4px;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0;
   }
 
   .icon-txt-btn:hover {
@@ -1263,8 +1264,8 @@ canvas.addEventListener('pointerdown', (ev) => {
       shapeType.value,       // rectangle or circle
       x,            	 	 // center adjust
       y,
-      10,                    // default width
-      10,                    // default height
+      shapeType.value == 'rectangle' ? 100 : 10, // default width
+      shapeType.value == 'rectangle' ? 50 : 10,  // default height
       {
         fill: "#ffffff",
         border: "solid",
