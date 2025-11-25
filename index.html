@@ -325,6 +325,28 @@
     background:#eaeaea;
   }
   
+  /* Left tools */
+  .left-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* text button */
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+    border: 1px solid #aaa;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  .icon-btn:hover {
+    background: #e8e8e8;
+  }
+
 </style>
 </head>
 <body>
@@ -334,8 +356,14 @@
   <textarea id="textEditor"
 		    style="position:absolute; display:none; resize:none;
 				   padding:4px; font-size:16px; 
+				   border:none; outline:none;">
+  </textarea>
+  <!--  <textarea id="textEditor"
+		    style="position:absolute; display:none; resize:none;
+				   padding:4px; font-size:16px; 
 				   border:1px solid #333; outline:none;">
   </textarea>
+  -->
 
   <!-- Slide-in Panel for Shape Properties -->
   <div id="panel" aria-hidden="true">
@@ -352,6 +380,8 @@
 			<option value="rectangle">Rectangle</option>
 		  </select>
 		</label>
+		
+		<button id="insertTextBtn" class="icon-txt-btn" title="Insert Text">✎</button>
 	  </div>
 
 	  <!-- Right side -->
@@ -400,6 +430,7 @@
 		<div class="row">
 		  <label>Border</label>
 		  <select id="propBorder">
+	   	    <option value="none">None</option>
 			<option value="solid">Solid</option>
 			<option value="dashed">Dashed</option>
 			<option value="bold">Bold</option>
@@ -657,6 +688,10 @@ const textEditor = document.getElementById("textEditor");
 const textList = document.getElementById("textList");
 const addTextboxBtn = document.getElementById("addTextboxBtn");
 
+// for insert text
+const insertTextBtn = document.getElementById("insertTextBtn");
+let insertingText = false;
+
 // main variables
 let shapes = [];         // list of drawn shapes
 let selected = null;     // shape currently selected
@@ -751,12 +786,13 @@ class Shape {
     this.radius = (this.rounded && type === 'rectangle') ? Math.max(0, Math.min(Math.abs(w), Math.abs(h)) * 0.1) : 0;
 
     this.opts = {
-      border: opts.border || 'solid',
+      border: opts.border || 'none',
       fill: opts.fill || '#ffffff',
       thickness: opts.thickness || 2,
       opacity: typeof opts.opacity === 'number' ? opts.opacity : 1
     };
 
+	debugger;
     // Text properties
     this.text = opts.text || "";
     this.textSize = opts.textSize || 16;
@@ -767,25 +803,46 @@ class Shape {
   draw(ctx, highlight=false) {
     ctx.save();
     ctx.globalAlpha = this.opts.opacity;
+	
+	const isNoBorder = this.opts.border === "none";
+	
     ctx.fillStyle = this.opts.fill;
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = this.opts.border === 'bold' ? this.opts.thickness * 3 : this.opts.thickness;
-    ctx.setLineDash(this.opts.border === 'dashed' ? [6,4] : []);
+	
+	if (!isNoBorder) {
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = this.opts.border === 'bold' ? this.opts.thickness * 3 : this.opts.thickness;
+    
+	  ctx.setLineDash(this.opts.border === 'dashed' ? [6,4] : []);
+	} else {
+      // No border → clear dash + no stroke
+      ctx.setLineDash([]);
+    }
 
+    // draw shape
     if (this.type === 'rectangle') {
       drawRoundedOrPlainRect(ctx, this.x, this.y, this.w, this.h, this.rounded ? this.radius : 0);
+	  
+      ctx.fill();
+
+      // stroke only if border is NOT none
+      if (!isNoBorder)
+	    ctx.stroke();
+		
     } else { // circle
       const r = Math.max(0, Math.sqrt(this.w*this.w + this.h*this.h));
       ctx.beginPath();
       ctx.arc(this.x, this.y, r, 0, Math.PI*2);
       ctx.fill();
-      ctx.stroke();
+	  
+      if (!isNoBorder)
+	    ctx.stroke();
     }
 
     if (highlight) {
       this.drawOutline(ctx);
       this.drawHandles(ctx);
     }
+	
     ctx.restore();
   }
 
@@ -1082,7 +1139,13 @@ addTextboxBtn.addEventListener("click", (e) => {
   textList.appendChild(wrapper);
 });
 
-// Fuction / Docs: collapse/expand behabior
+// Activate text insert mode
+insertTextBtn.addEventListener("click", () => {
+  insertingText = true;
+  insertTextBtn.style.background = "#d0ffd0"; // highlight active
+});
+
+// Function / Docs: collapse/expand behabior
 infoHeader.addEventListener("click", () => {
   const isOpen = infoContent.style.display !== "none";
 
@@ -1093,6 +1156,10 @@ infoHeader.addEventListener("click", () => {
     infoContent.style.display = "block";
     infoToggle.textContent = "▼"; // expanded
   }
+});
+
+shapeType.addEventListener("change", () => {
+    insertingText = false;
 });
 
 // live updates from panel
@@ -1123,7 +1190,6 @@ panelClose.addEventListener('click', closePanel);
 /* -------------------- Pointer Events -------------------- */
 // when mouse click
 canvas.addEventListener('pointerdown', (ev) => {
-  debugger;
   ev.preventDefault();
   canvas.setPointerCapture(ev.pointerId);
   
@@ -1172,7 +1238,27 @@ canvas.addEventListener('pointerdown', (ev) => {
       y = snapToGrid(y);
     }
 	
-    const newShape = new Shape(
+	// for inserting text on canvas
+	if(insertingText) {
+      const newShapeText = new Shape(
+      'rectangle',       	 // rectangle
+      x,            	 	 // center adjust
+      y,
+      100,                    // default width
+      50,                    // default height
+      {
+        fill: "transparent",
+        border: "none",
+        thickness: 2,
+        opacity: 1,
+        rounded: false,
+		text: "Text"
+      });
+	  
+	  shapes.push(newShapeText);
+	  selected = newShapeText;
+	} else {
+	  const newShape = new Shape(
       shapeType.value,       // rectangle or circle
       x,            	 	 // center adjust
       y,
@@ -1184,11 +1270,11 @@ canvas.addEventListener('pointerdown', (ev) => {
         thickness: 2,
         opacity: 1,
         rounded: false
-      }
-    );
-
-	shapes.push(newShape);
-	selected = newShape;
+      });
+	  
+	  shapes.push(newShape);
+	  selected = newShape;
+	}
 
 	//openPanelForShape(selected);
 	redraw();
@@ -1280,7 +1366,7 @@ canvas.addEventListener('pointermove', (ev) => {
 
 // when mouse is up
 canvas.addEventListener('pointerup', (ev) => {
-  debugger;
+  //debugger;
   ev.preventDefault();
   canvas.releasePointerCapture(ev.pointerId);
   const pos = screenToCanvas(ev);
@@ -1321,7 +1407,7 @@ canvas.addEventListener('pointerup', (ev) => {
 });
 
 canvas.addEventListener('pointercancel', (ev) => {
-  debugger;
+  //debugger;
   if (isDrawing) { isDrawing = false; tempShape = null; redraw(); }
   if (isDragging) isDragging = false;
   if (isResizing) { isResizing = false; activeHandle = null; }
@@ -1511,8 +1597,8 @@ function drawRoundedOrPlainRect(ctx, x, y, w, h, radius) {
   if (!r) {
     ctx.beginPath();
     ctx.rect(x0, y0, W, H);
-    ctx.fill();
-    ctx.stroke();
+    //ctx.fill();
+    //ctx.stroke();
     return;
   }
 
@@ -1527,8 +1613,8 @@ function drawRoundedOrPlainRect(ctx, x, y, w, h, radius) {
   ctx.lineTo(x0, y0 + r);
   ctx.arcTo(x0, y0, x0 + r, y0, r);
   ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+  //ctx.fill();
+  //ctx.stroke();
 }
 
 // grid: light dots every 10px, stronger dots every 50px
