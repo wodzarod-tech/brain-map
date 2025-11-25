@@ -328,12 +328,13 @@
   /* Left tools */
   .left-tools {
     display: flex;
+    display: flex;
     align-items: center;
     gap: 10px;
   }
 
   /* text button */
-  .icon-btn {
+  .icon-txt-btn {
     width: 32px;
     height: 32px;
     font-size: 20px;
@@ -343,8 +344,13 @@
     border-radius: 4px;
   }
 
-  .icon-btn:hover {
+  .icon-txt-btn:hover {
     background: #e8e8e8;
+  }
+ 
+ .icon-txt-btn.active {
+    background-color: #0078ff;
+    color: white;
   }
 
 </style>
@@ -356,14 +362,8 @@
   <textarea id="textEditor"
 		    style="position:absolute; display:none; resize:none;
 				   padding:4px; font-size:16px; 
-				   border:none; outline:none;">
-  </textarea>
-  <!--  <textarea id="textEditor"
-		    style="position:absolute; display:none; resize:none;
-				   padding:4px; font-size:16px; 
 				   border:1px solid #333; outline:none;">
   </textarea>
-  -->
 
   <!-- Slide-in Panel for Shape Properties -->
   <div id="panel" aria-hidden="true">
@@ -1141,8 +1141,8 @@ addTextboxBtn.addEventListener("click", (e) => {
 
 // Activate text insert mode
 insertTextBtn.addEventListener("click", () => {
-  insertingText = true;
-  insertTextBtn.style.background = "#d0ffd0"; // highlight active
+  insertingText = !insertingText;
+  insertTextBtn.classList.toggle("active", insertingText);
 });
 
 // Function / Docs: collapse/expand behabior
@@ -1160,6 +1160,7 @@ infoHeader.addEventListener("click", () => {
 
 shapeType.addEventListener("change", () => {
     insertingText = false;
+	insertTextBtn.classList.remove("active");
 });
 
 // live updates from panel
