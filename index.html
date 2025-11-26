@@ -714,9 +714,10 @@ let editingShape = null;
 let showGrid = true; // grid enabled
 
 // connect nodes with edge
-let connecting = false;
-let sourceShape = null;
-let edges = [];
+//let connecting = false; 
+//let sourceNode = null; // the node where the user started dragging from
+let edges = []; // { from: shapeObject, to: shapeObject }
+let pendingConnection = null; // when first shape selected
 
 // collapse/expand behabior
 const infoHeader = document.getElementById("infoHeader");
@@ -817,6 +818,11 @@ class Shape {
       // No border → clear dash + no stroke
       ctx.setLineDash([]);
     }
+
+// draw edges first or last (your choice)
+for (const e of edges) {
+    drawArrow(e.from, e.to);
+}
 
     // draw shape
     if (this.type === 'rectangle') {
@@ -1216,20 +1222,48 @@ canvas.addEventListener('pointerdown', (ev) => {
   selected = null;
   for (let i = shapes.length - 1; i >= 0; i--) {
     if (shapes[i].contains(pos.x, pos.y)) {
-      selected = shapes[i];
+      const hit = shapes[i];
+	  //selected = shapes[i];
 	  
+	  // for connection shapes
+	  /*
+	  if (pendingConnection === null) {
+        // first click → start connection
+        pendingConnection = hit;
+        selected = hit;
+        redraw();
+        return;
+      } else if (pendingConnection && hit !== pendingConnection) {
+        // second click → complete arrow
+        edges.push({
+          from: pendingConnection,
+          to: hit
+        });
+
+        pendingConnection = null;
+        selected = hit;
+        redraw();
+        return;
+      }*/
+
+      // normal select + drag logic
+      selected = hit;
+		
 	  // only reached if NOT in connection mode
       isDragging = true;
       dragOffsetX = pos.x - selected.x;
       dragOffsetY = pos.y - selected.y;
 	  
       // open panel for this shape
-      openPanelForShape(selected);
+      //openPanelForShape(selected);
       redraw();
       return;
     }
   }
   
+  // clicking empty canvas cancels connection mode
+  pendingConnection = null;
+
   // if click did NOT hit any shape → create a new node (circle) instantly
   if (!selected) {
     // snap-to-grid
@@ -1399,7 +1433,7 @@ canvas.addEventListener('pointerup', (ev) => {
       selected = tempShape;
 	  
       // open panel for new shape
-      openPanelForShape(selected);
+      //openPanelForShape(selected);
     }
     tempShape = null;
   }
@@ -1473,19 +1507,30 @@ document.addEventListener("keydown", (e) => {
 
 // when double-left click
 canvas.addEventListener('dblclick', (ev) => {
+  ev.preventDefault();
   const pos = screenToCanvas(ev);
   
-  // find topmost shape
-  let hit = null;
+  // find shape under double click
+  //let hit = null;
   for (let i = shapes.length - 1; i >= 0; i--) {
-    if (shapes[i].contains(pos.x, pos.y)) { hit = shapes[i]; break; }
+    if (shapes[i].contains(pos.x, pos.y)){
+	  selected = shapes[i];
+	  //hit = shapes[i];
+	  // open panel for this shape
+	  openPanelForShape(selected);
+	  redraw();
+	  //return;
+	  break;
+	}
   }
   
-  if (!hit) return;
+  if (!selected) return;
+  //if (!hit) return;
   
-  startInlineEdit(hit);
+  startInlineEdit(selected);
+  //startInlineEdit(hit);
   
-  selected = hit;
+  //selected = hit;
 });
 
 // when right-clicking the canvas then close editor
@@ -1887,6 +1932,37 @@ function centerEditorText(shape) {
     const approxOffset = (shape.h / 2) - 10;
     textEditor.style.paddingTop = approxOffset + "px";
 }
+
+// draw arrow/edge
+function drawArrow(from, to) {
+    const startX = from.x + from.w / 2;
+    const startY = from.y + from.h / 2;
+    const endX = to.x + to.w / 2;
+    const endY = to.y + to.h / 2;
+
+    const headLength = 12;
+    const angle = Math.atan2(endY - startY, endX - startX);
+
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+
+    // arrowhead
+    ctx.lineTo(
+        endX - headLength * Math.cos(angle - Math.PI / 6),
+        endY - headLength * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.moveTo(endX, endY);
+    ctx.lineTo(
+        endX - headLength * Math.cos(angle + Math.PI / 6),
+        endY - headLength * Math.sin(angle + Math.PI / 6)
+    );
+
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
+
 </script>
 </body>
 </html>
