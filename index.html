@@ -793,7 +793,6 @@ class Shape {
       opacity: typeof opts.opacity === 'number' ? opts.opacity : 1
     };
 
-	debugger;
     // Text properties
     this.text = opts.text || "";
     this.textSize = opts.textSize || 16;
@@ -1159,7 +1158,7 @@ infoHeader.addEventListener("click", () => {
   }
 });
 
-shapeType.addEventListener("change", () => {
+shapeType.addEventListener("click", () => {
     insertingText = false;
 	insertTextBtn.classList.remove("active");
 });
@@ -1193,6 +1192,7 @@ panelClose.addEventListener('click', closePanel);
 // when mouse click
 canvas.addEventListener('pointerdown', (ev) => {
   ev.preventDefault();
+
   canvas.setPointerCapture(ev.pointerId);
   
   const pos = screenToCanvas(ev); // autoscaling
@@ -1557,9 +1557,14 @@ document.addEventListener('keydown', (ev) => {
 /* -------------------- Drawing Helpers -------------------- */
 // start text editing inside the shape
 function startInlineEdit(shape) {
+
     editingShape = shape;
 
     textEditor.value = shape.text || "";
+
+	// avoid old text behind of editing
+	shape.text = "";
+	redraw();
 	
 	textEditor.style.textAlign = "center";
 	textEditor.style.background = "transparent";
@@ -1751,6 +1756,8 @@ function resizeShape(shape, handle, mx, my) {
 
 // saves the text before the textarea width resets
 function finishInlineEdit() {
+	debugger;
+	console.log("finishInlineEdit")
     if (!editingShape) return;
 	
     // save exactly the text the user wrote (NO wrapping)
