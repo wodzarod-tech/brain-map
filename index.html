@@ -1562,35 +1562,63 @@ function startInlineEdit(shape) {
 
     textEditor.value = shape.text || "";
 
-	// avoid old text behind of editing
+	// remove old text behind of editing
 	shape.text = "";
 	redraw();
 	
-	textEditor.style.textAlign = "center";
+	//textEditor.style.textAlign = "center";
 	textEditor.style.background = "transparent";
 	textEditor.style.border = "none";        // optional
 	textEditor.style.outline = "none";       // optional
-
-    textEditor.style.left = (shape.x + canvas.offsetLeft) + "px";
-    textEditor.style.top = (shape.y + canvas.offsetTop) + "px";
-    textEditor.style.width = shape.w + "px";
-    textEditor.style.height = shape.h + "px";
 	
 	// NOT wrap, shape text can be longer than box
     textEditor.style.width = shape.w + "px";
     textEditor.style.height = shape.h + "px";
 
+	debugger;
+	const { cx, cy } = getCenter(shape);
+	console.log("Center:", cx, cy);
+	console.log("shape.x", shape.x);
+	console.log("shape.y", shape.y);
+	
+	//textEditor.style.left = (shape.x) - 10 + "px";
+    //textEditor.style.top = (shape.y) - 10 + "px";
+	
+	//textEditor.style.left = (shape.x - cx*0.0262) + "px";
+    //textEditor.style.top = (shape.y + cy*0.0425) + "px";
+    
+	textEditor.style.left = (shape.x + canvas.offsetLeft) + "px";
+    textEditor.style.top = (shape.y + canvas.offsetTop) + "px";
+	console.log("width", shape.w);
+	console.log("height", shape.h);
+	
     // disable wrapping
     textEditor.style.whiteSpace = "nowrap";
     textEditor.style.overflow = "hidden";
 	
 	// center text
-    textEditor.style.textAlign = "center";
-    centerEditorText(shape);
+    //textEditor.style.textAlign = "center";
+    //centerEditorText(shape);
 	
     textEditor.style.display = "block";
     textEditor.focus();
     textEditor.select();
+}
+
+// get center of any shape
+function getCenter(shape) {
+    if (shape.type === "rectangle") {
+        return {
+            cx: shape.x + shape.w / 2,
+            cy: shape.y + shape.h / 2
+        };
+    } else { 
+        // circle — your shape.x and shape.y ARE already the center
+        return {
+            cx: shape.x,
+            cy: shape.y
+        };
+    }
 }
 
 // rounded rect drawing
