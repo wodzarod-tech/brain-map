@@ -804,6 +804,7 @@ class Shape {
   }
 
   draw(ctx, highlight=false) {
+  debugger;
     ctx.save();
     ctx.globalAlpha = this.opts.opacity;
 	
@@ -850,8 +851,26 @@ class Shape {
       this.drawOutline(ctx);
       this.drawHandles(ctx); // draw squares corners
     }
-	
+		
     ctx.restore();
+  }
+
+  // draw a pixel at the center of a shape
+  drawCenterPixel(ctx) {
+  debugger;
+  let cx;
+  let cy;
+    if (this.type === "rectangle") {
+        cx = this.x + this.w / 2,
+        cy = this.y + this.h / 2
+    } else { 
+      // circle — your shape.x and shape.y ARE already the center
+        cx = this.x + this.w / 2,
+		cy = this.y + this.h / 2
+    }
+	debugger;
+	ctx.fillStyle = "red";        // or any color
+	ctx.fillRect(cx, cy, 7, 7);  // 1 single pixel
   }
 
   drawOutline(ctx) {
@@ -1719,8 +1738,10 @@ function getCenter(shape) {
     } else { 
         // circle — your shape.x and shape.y ARE already the center
         return {
-            cx: shape.x,
-            cy: shape.y
+            cx: this.x + this.w / 2,
+			cy: this.y + this.h / 2
+			//cx: shape.x,
+            //cy: shape.y
         };
     }
 }
@@ -1801,9 +1822,9 @@ function redraw() {
   // draw grid behind everything
   if (showGrid)
     drawGrid(ctx);
-  
   // draw shapes
   shapes.forEach(s => {
+    s.drawCenterPixel(ctx);
 	s.draw(ctx, s === selected);
 	renderText(ctx, s);
   });
