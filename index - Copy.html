@@ -719,7 +719,6 @@ let showGrid = true; // grid enabled
 let edges = []; // { from: shapeObject, to: shapeObject }
 let pendingConnection = null; // when first shape selected
 let justCreatedShape = null; // for move shape in the first attempt
-let shapeIsMoving = false;
 
 // collapse/expand behabior
 const infoHeader = document.getElementById("infoHeader");
@@ -821,10 +820,10 @@ class Shape {
       ctx.setLineDash([]);
     }
 
-    // draw edges first or last (your choice)
-    for (const e of edges) {
-      drawArrow(e.from, e.to);
-    }
+// draw edges first or last (your choice)
+for (const e of edges) {
+    drawArrow(e.from, e.to);
+}
 
     // draw shape
     if (this.type === 'rectangle') {
@@ -846,9 +845,9 @@ class Shape {
 	    ctx.stroke();
     }
 
-    if (highlight && !shapeIsMoving) {
+    if (highlight) {
       this.drawOutline(ctx);
-      this.drawHandles(ctx); // draw squares corners
+      this.drawHandles(ctx);
     }
 	
     ctx.restore();
@@ -1207,7 +1206,6 @@ canvas.addEventListener('pointerdown', (ev) => {
 
   activeHandle = null;
   isResizing = false;
-  shapeIsMoving = false;
 
   // -----------------------------
   // 1. HANDLE RESIZE HANDLES
@@ -1237,7 +1235,7 @@ canvas.addEventListener('pointerdown', (ev) => {
   for (let i = shapes.length - 1; i >= 0; i--) {
     if (shapes[i].contains(pos.x, pos.y)) {
       const hit = shapes[i];
-	  selected = hit;
+	  console.log("hit", hit);
 	  //selected = shapes[i];
 	  
 	  // ----------------------------------------------------------
@@ -1258,12 +1256,12 @@ canvas.addEventListener('pointerdown', (ev) => {
       // CONNECTION MODE
       // ----------------------------------------------------------
 	  // for connection shapes
-	  if (pendingConnection === null) {
+	  /*if (pendingConnection === null) {
         // first click → start connection
         pendingConnection = hit;
-        //selected = hit;
-        //redraw();
-        //return;
+        selected = hit;
+        redraw();
+        return;
       } else if (pendingConnection && hit !== pendingConnection) {
         // second click → complete arrow
         edges.push({
@@ -1272,16 +1270,16 @@ canvas.addEventListener('pointerdown', (ev) => {
         });
 
         pendingConnection = null;
-        //selected = hit;
-        //redraw();
-        //return;
-      }
+        selected = hit;
+        redraw();
+        return;
+      }*/
 
       // ----------------------------------------------------------
       // NORMAL CLICK: SELECT + DRAG
       // ----------------------------------------------------------
+      selected = hit;
       justCreatedShape = null; // reset if it was set
-	  //mouseDownInsideShape = true;
 		
 	  // only reached if NOT in connection mode
       isDragging = true;
@@ -1389,10 +1387,6 @@ canvas.addEventListener('pointermove', (ev) => {
 
   // for dragging
   if (isDragging && selected) {
-    shapeIsMoving = true;
-	
-	pendingConnection = null; // cancel connection mode with arrow after moving a shape
-	
     let newX = pos.x - dragOffsetX;
     let newY = pos.y - dragOffsetY;
 
@@ -1459,11 +1453,6 @@ canvas.addEventListener('pointerup', (ev) => {
   ev.preventDefault();
   canvas.releasePointerCapture(ev.pointerId);
   const pos = screenToCanvas(ev);
-  
-  // If user clicked empty space → cancel pending connection
-  if (!selected) {
-    pendingConnection = null;
-  }
 
   // for resizing
   if (isResizing) {
@@ -1497,7 +1486,6 @@ canvas.addEventListener('pointerup', (ev) => {
   }
 
   isDrawing = false;
-  pendingConnection = null;
   redraw();
 });
 
