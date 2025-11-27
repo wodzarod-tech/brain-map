@@ -718,6 +718,7 @@ let showGrid = true; // grid enabled
 //let sourceNode = null; // the node where the user started dragging from
 let edges = []; // { from: shapeObject, to: shapeObject }
 let pendingConnection = null; // when first shape selected
+let justCreatedShape = null; // for move shape in the first attempt
 
 // collapse/expand behabior
 const infoHeader = document.getElementById("infoHeader");
@@ -1206,6 +1207,9 @@ canvas.addEventListener('pointerdown', (ev) => {
   activeHandle = null;
   isResizing = false;
 
+  // -----------------------------
+  // 1. HANDLE RESIZE HANDLES
+  // -----------------------------
   // check if click hits a resize handle -> start resizing
   if (selected) {
     const hn = selected.handleAt(pos.x, pos.y);
@@ -1218,16 +1222,58 @@ canvas.addEventListener('pointerdown', (ev) => {
     }
   }
 
+  console.log("selected",selected);
+    console.log("isResizing",isResizing);
+	  console.log("activeHandle",activeHandle);
+  // -----------------------------
+  // 2. HIT TEST SHAPES
+  // -----------------------------
   // check if click hits a shape → select + drag
   selected = null;
+  
   for (let i = shapes.length - 1; i >= 0; i--) {
     if (shapes[i].contains(pos.x, pos.y)) {
       const hit = shapes[i];
+	  console.log("hit", hit);
 	  //selected = shapes[i];
 	  
+	  // ----------------------------------------------------------
+      // SPECIAL CASE: FIRST CLICK AFTER CREATED A SHAPE → MOVE IT
+      // ----------------------------------------------------------
+	  /*if (hit === justCreatedShape) {
+        selected = hit;
+        justCreatedShape = null;
+
+        isDragging = true;
+        dragOffsetX = pos.x - selected.x;
+        dragOffsetY = pos.y - selected.y;
+        redraw();
+        return;
+      }*/
+	  
+      // ----------------------------------------------------------
+      // CONNECTION MODE
+      // ----------------------------------------------------------
 	  // for connection shapes
-	  /*
-	  if (pendingConnection === null) {
+	  if (hit && pendingConnection === null) {
+        // first click → start connection
+        pendingConnection = hit;
+        selected = hit;
+        redraw();
+        return;
+      } else if (pendingConnection && hit !== pendingConnection) {
+        // second click → complete arrow
+        edges.push({
+          from: pendingConnection,
+          to: hit
+        });
+
+        pendingConnection = null;
+        selected = hit;
+        redraw();
+        return;
+      }
+	  /*if (pendingConnection === null) {
         // first click → start connection
         pendingConnection = hit;
         selected = hit;
@@ -1246,8 +1292,11 @@ canvas.addEventListener('pointerdown', (ev) => {
         return;
       }*/
 
-      // normal select + drag logic
+      // ----------------------------------------------------------
+      // NORMAL CLICK: SELECT + DRAG
+      // ----------------------------------------------------------
       selected = hit;
+      justCreatedShape = null; // reset if it was set
 		
 	  // only reached if NOT in connection mode
       isDragging = true;
@@ -1264,7 +1313,10 @@ canvas.addEventListener('pointerdown', (ev) => {
   // clicking empty canvas cancels connection mode
   pendingConnection = null;
 
-  // if click did NOT hit any shape → create a new node (circle) instantly
+  // -----------------------------
+  // 3. CREATE NEW SHAPE
+  // -----------------------------
+  // if click did NOT hit any shape → create a new shape (circle by default) instantly
   if (!selected) {
     // snap-to-grid
     let x = pos.x, y = pos.y;
@@ -1274,7 +1326,9 @@ canvas.addEventListener('pointerdown', (ev) => {
       y = snapToGrid(y);
     }
 	
-	// for inserting text on canvas
+	//let newShape;
+	
+	// TEXT INSERT MODE: for inserting text on canvas
 	if(insertingText) {
       const newShapeText = new Shape(
       'rectangle',       	 // rectangle
@@ -1292,8 +1346,13 @@ canvas.addEventListener('pointerdown', (ev) => {
       });
 	  
 	  shapes.push(newShapeText);
-	  selected = newShapeText;
-	} else {
+      justCreatedShape = newShapeText; // for move shape in the first attempt
+      selected = null; // do not auto-select (resizing) the new shape
+      redraw();
+      //return;
+	}
+	// NORMAL SHAPE MODE
+	else {
 	  const newShape = new Shape(
       shapeType.value,       // rectangle or circle
       x,            	 	 // center adjust
@@ -1309,7 +1368,11 @@ canvas.addEventListener('pointerdown', (ev) => {
       });
 	  
 	  shapes.push(newShape);
-	  selected = newShape;
+      justCreatedShape = newShape;  // for move shape in the first attempt
+	  selected = null; // do not auto-select (resizing) the new shape
+	  //selected = newShape;
+	  redraw();
+	  return;   // stop normal drawing logic
 	}
 
 	//openPanelForShape(selected);
@@ -1319,7 +1382,8 @@ canvas.addEventListener('pointerdown', (ev) => {
 
   // start drawing a new shape
   isDrawing = false; // disable drawing when clicking
-  startX = pos.x; startY = pos.y;
+  startX = pos.x;
+  startY = pos.y;
   tempShape = null;
   
   // when starting to draw, close panel (avoid overlap)
