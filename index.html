@@ -804,7 +804,6 @@ class Shape {
   }
 
   draw(ctx, highlight=false) {
-  debugger;
     ctx.save();
     ctx.globalAlpha = this.opts.opacity;
 	
@@ -856,7 +855,7 @@ class Shape {
   }
 
   // draw a pixel at the center of a shape
-  drawCenterPixel(ctx) {
+  /*drawCenterPixel(ctx) {
   debugger;
   let cx;
   let cy;
@@ -865,13 +864,12 @@ class Shape {
         cy = this.y + this.h / 2
     } else { 
       // circle — your shape.x and shape.y ARE already the center
-        cx = this.x + this.w / 2,
-		cy = this.y + this.h / 2
+        cx = this.x;
+		cy = this.y;
     }
-	debugger;
 	ctx.fillStyle = "red";        // or any color
-	ctx.fillRect(cx, cy, 7, 7);  // 1 single pixel
-  }
+	ctx.fillRect(cx, cy, 1, 1);  // 1 single pixel
+  }*/
 
   drawOutline(ctx) {
     ctx.save();
@@ -1280,9 +1278,6 @@ canvas.addEventListener('pointerdown', (ev) => {
 	  if (pendingConnection === null) {
         // first click → start connection
         pendingConnection = hit;
-        //selected = hit;
-        //redraw();
-        //return;
       } else if (pendingConnection && hit !== pendingConnection) {
         // second click → complete arrow
         edges.push({
@@ -1291,9 +1286,6 @@ canvas.addEventListener('pointerdown', (ev) => {
         });
 
         pendingConnection = null;
-        //selected = hit;
-        //redraw();
-        //return;
       }
 
       // ----------------------------------------------------------
@@ -1364,7 +1356,7 @@ canvas.addEventListener('pointerdown', (ev) => {
       shapeType.value == 'rectangle' ? 100 : 10, // default width
       shapeType.value == 'rectangle' ? 50 : 10,  // default height
       {
-        fill: "#ffffff",
+        fill: "transparent", /*#ffffff",*/
         border: "solid",
         thickness: 2,
         opacity: 1,
@@ -1698,11 +1690,11 @@ function startInlineEdit(shape) {
     textEditor.style.width = shape.w + "px";
     textEditor.style.height = shape.h + "px";
 
-	debugger;
+	//debugger;
 	const { cx, cy } = getCenter(shape);
-	console.log("Center:", cx, cy);
-	console.log("shape.x", shape.x);
-	console.log("shape.y", shape.y);
+	//console.log("Center:", cx, cy);
+	//console.log("shape.x", shape.x);
+	//console.log("shape.y", shape.y);
 	
 	//textEditor.style.left = (shape.x) - 10 + "px";
     //textEditor.style.top = (shape.y) - 10 + "px";
@@ -1738,10 +1730,10 @@ function getCenter(shape) {
     } else { 
         // circle — your shape.x and shape.y ARE already the center
         return {
-            cx: this.x + this.w / 2,
-			cy: this.y + this.h / 2
-			//cx: shape.x,
-            //cy: shape.y
+            //cx: this.x + this.w / 2,
+			//cy: this.y + this.h / 2
+			cx: shape.x,
+            cy: shape.y
         };
     }
 }
@@ -1824,7 +1816,7 @@ function redraw() {
     drawGrid(ctx);
   // draw shapes
   shapes.forEach(s => {
-    s.drawCenterPixel(ctx);
+    //s.drawCenterPixel(ctx);
 	s.draw(ctx, s === selected);
 	renderText(ctx, s);
   });
@@ -2015,10 +2007,29 @@ function centerEditorText(shape) {
 
 // draw arrow/edge
 function drawArrow(from, to) {
-    const startX = from.x + from.w / 2;
-    const startY = from.y + from.h / 2;
-    const endX = to.x + to.w / 2;
-    const endY = to.y + to.h / 2;
+	//debugger;
+    //const startX = from.x + from.w / 2;
+    //const startY = from.y + from.h / 2;
+    //const endX = to.x + to.w / 2;
+    //const endY = to.y + to.h / 2;
+	
+	let startX, startY,	endX, endY;
+	
+	if(from.type === 'rectangle') {
+      startX = from.x + from.w / 2;
+      startY = from.y + from.h / 2;
+	} else if(from.type === 'circle') {
+	  startX = from.x;
+      startY = from.y;
+	}
+	
+	if(to.type === 'rectangle') {
+      endX = to.x + to.w / 2;
+      endY = to.y + to.h / 2;
+	} else if(to.type === 'circle') {
+      endX = to.x;
+      endY = to.y;
+	}
 
     const headLength = 12;
     const angle = Math.atan2(endY - startY, endX - startX);
