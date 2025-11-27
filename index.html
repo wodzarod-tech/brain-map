@@ -2007,51 +2007,82 @@ function centerEditorText(shape) {
 
 // draw arrow/edge
 function drawArrow(from, to) {
-	//debugger;
-    //const startX = from.x + from.w / 2;
-    //const startY = from.y + from.h / 2;
-    //const endX = to.x + to.w / 2;
-    //const endY = to.y + to.h / 2;
-	
-	let startX, startY,	endX, endY;
-	
-	if(from.type === 'rectangle') {
-      startX = from.x + from.w / 2;
-      startY = from.y + from.h / 2;
-	} else if(from.type === 'circle') {
-	  startX = from.x;
-      startY = from.y;
-	}
-	
-	if(to.type === 'rectangle') {
-      endX = to.x + to.w / 2;
-      endY = to.y + to.h / 2;
-	} else if(to.type === 'circle') {
-      endX = to.x;
-      endY = to.y;
-	}
+    // get shape centers
+    const cx1 = from.type === "rectangle" ? from.x + from.w / 2 : from.x;
+    const cy1 = from.type === "rectangle" ? from.y + from.h / 2 : from.y;
 
+    const cx2 = to.type === "rectangle" ? to.x + to.w / 2 : to.x;
+    const cy2 = to.type === "rectangle" ? to.y + to.h / 2 : to.y;
+
+    // border intersection points
+    const start = getBorderPoint(from, cx2, cy2);
+    const end = getBorderPoint(to, cx1, cy1);
+
+    // draw arrow line
     const headLength = 12;
-    const angle = Math.atan2(endY - startY, endX - startX);
+    const angle = Math.atan2(end.y - start.y, end.x - start.x);
 
     ctx.beginPath();
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(endX, endY);
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
 
-    // arrowhead
+    // arrowhead left
     ctx.lineTo(
-        endX - headLength * Math.cos(angle - Math.PI / 6),
-        endY - headLength * Math.sin(angle - Math.PI / 6)
+        end.x - headLength * Math.cos(angle - Math.PI / 6),
+        end.y - headLength * Math.sin(angle - Math.PI / 6)
     );
-    ctx.moveTo(endX, endY);
+
+    // move back to tip
+    ctx.moveTo(end.x, end.y);
+
+    // arrowhead right
     ctx.lineTo(
-        endX - headLength * Math.cos(angle + Math.PI / 6),
-        endY - headLength * Math.sin(angle + Math.PI / 6)
+        end.x - headLength * Math.cos(angle + Math.PI / 6),
+        end.y - headLength * Math.sin(angle + Math.PI / 6)
     );
 
     ctx.strokeStyle = "#000";
     ctx.lineWidth = 2;
     ctx.stroke();
+}
+
+// get border from shape
+function getBorderPoint(shape, targetX, targetY) {
+    const isCircle = shape.type === "circle";
+
+    // center
+    const cx = isCircle ? shape.x : shape.x + shape.w / 2;
+    const cy = isCircle ? shape.y : shape.y + shape.h / 2;
+
+    const dx = targetX - cx;
+    const dy = targetY - cy;
+
+    // Circle (uses shape.w as radius)
+    if (isCircle) {
+        const r = Math.abs(shape.w); // radius = shape.w (your model)
+        const angle = Math.atan2(dy, dx);
+
+        return {
+            x: cx + Math.cos(angle) * r*1.4,
+            y: cy + Math.sin(angle) * r*1.4
+        };
+    }
+
+    // Rectangle
+    const halfW = shape.w / 2;
+    const halfH = shape.h / 2;
+
+    const absDX = Math.abs(dx);
+    const absDY = Math.abs(dy);
+
+    let scale = halfW / absDX;
+    if (absDY * scale > halfH)
+        scale = halfH / absDY;
+
+    return {
+        x: cx + dx * scale,
+        y: cy + dy * scale
+    };
 }
 
 </script>
