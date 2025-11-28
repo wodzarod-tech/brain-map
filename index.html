@@ -836,6 +836,12 @@ class Shape {
 	
     ctx.fillStyle = this.opts.fill;
 	
+    // add shadow
+	ctx.shadowColor = "rgba(0,0,0,0.75)";
+	ctx.shadowBlur = 16;
+	ctx.shadowOffsetX = 6;
+	ctx.shadowOffsetY = 6;
+	
 	if (!isNoBorder) {
       ctx.strokeStyle = 'black';
       ctx.lineWidth = this.opts.border === 'bold' ? this.opts.thickness * 3 : this.opts.thickness;
@@ -846,12 +852,7 @@ class Shape {
       ctx.setLineDash([]);
     }
 
-    // draw edges first or last (your choice)
-    for (const e of edges) {
-      drawArrow(e.from, e.to);
-    }
-
-    // draw shape
+    // draw shape with shadow
     if (this.type === 'rectangle') {
       drawRoundedOrPlainRect(ctx, this.x, this.y, this.w, this.h, this.rounded ? this.radius : 0);
 	  
@@ -875,7 +876,25 @@ class Shape {
       this.drawOutline(ctx);
       this.drawHandles(ctx); // draw squares corners
     }
-		
+	
+	// reset shadow
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+	
+	// draw edge without shadow
+	ctx.setLineDash([]); // avoid inheriting dashed from shape
+    ctx.lineWidth = 2;
+	
+	for (const e of edges) {
+        if (selected === e) {
+            drawArrow(e.from, e.to, "red", 3);
+        } else {
+            drawArrow(e.from, e.to, "#000", 2);
+        }
+    }
+
     ctx.restore();
   }
 
@@ -1249,7 +1268,13 @@ document.getElementById("exportPngBtn").addEventListener("click", () => {
 });
 
 // live updates from panel
-propFill.addEventListener('input', () => { if(selected){ selected.opts.fill = propFill.value; redraw(); }});
+propFill.addEventListener('input', () => { 
+  if(selected){
+    selected.opts.fill = propFill.value;
+	redraw();
+  }
+});
+
 propBorder.addEventListener('change', () => { if(selected){ selected.opts.border = propBorder.value; redraw(); }});
 propThickness.addEventListener('input', () => { if(selected){ selected.opts.thickness = +propThickness.value; redraw(); }});
 propOpacity.addEventListener('input', () => { if(selected){ selected.opts.opacity = +propOpacity.value; propOpacityVal.innerText = (+propOpacity.value).toFixed(2); redraw(); }});
@@ -1300,10 +1325,6 @@ canvas.addEventListener('pointerdown', (ev) => {
       return;
     }
   }
-
-  //console.log("selected",selected);
-  //console.log("isResizing",isResizing);
-  //console.log("activeHandle",activeHandle);
   
   // -----------------------------
   // 2. HIT TEST SHAPES
