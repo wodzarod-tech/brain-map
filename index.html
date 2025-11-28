@@ -354,6 +354,74 @@
     color: white;
   }
 
+  <!-- Modal API Rest -->
+  .api-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+
+.api-modal-content {
+  background: #fff;
+  width: 650px;
+  max-width: 95%;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.3);
+  animation: popup 0.15s ease-out;
+}
+
+@keyframes popup {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.api-close {
+  float: right;
+  font-size: 28px;
+  cursor: pointer;
+  color: #444;
+}
+
+.api-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+#apiMethod {
+  width: 90px;
+}
+
+#apiUrl {
+  flex: 1;
+  padding: 6px 8px;
+}
+
+#apiSendBtn {
+  padding: 6px 14px;
+}
+
+#apiBody {
+  width: 100%;
+  height: 120px;
+  margin-bottom: 10px;
+  font-family: monospace;
+  padding: 8px;
+}
+
+#apiResponse {
+  background: #f4f4f4;
+  padding: 12px;
+  max-height: 260px;
+  overflow: auto;
+  border-radius: 6px;
+}
+
 </style>
 </head>
 <body>
@@ -600,7 +668,7 @@
 	  
           </header>
 		  
-		  <!-- Search buttonz -->
+		  <!-- Search button -->
 		  <div id="servicesGrid" style="
 		    display:grid;
 			grid-template-columns: repeat(4, 1fr);
@@ -610,7 +678,7 @@
 
 		  <!-- 12 buttons (4 × 3) -->
 		  <!-- row 1 -->
-		  <button class="service-btn" style="display:flex; align-items:center; justify-content:center;" title="Postman">
+		  <button class="service-btn" id="apiRestBtn" style="display:flex; align-items:center; justify-content:center;" title="Postman">
 		    <img src="images/postman-logo-orange-stacked.svg"
 			     alt="Postman"
 			     style="width:50px; height:50px;">
@@ -654,6 +722,32 @@
       <button id="propReset">Reset</button>
     </div>
   </div>
+  </div>
+  <!-- Modal API Rest -->
+<div id="apiModal" class="api-modal">
+  <div class="api-modal-content">
+    <span id="apiClose" class="api-close">&times;</span>
+
+    <h2 style="margin-top:0;">API Tester</h2>
+
+    <div class="api-row">
+      <select id="apiMethod">
+        <option>GET</option>
+        <option>POST</option>
+        <option>PUT</option>
+        <option>DELETE</option>
+      </select>
+
+      <input id="apiUrl" type="text" placeholder="https://api.example.com/users" />
+      <button id="apiSendBtn">Send</button>
+    </div>
+
+    <textarea id="apiBody" placeholder="Request JSON body (POST / PUT)" spellcheck="false"></textarea>
+
+    <h3>Response:</h3>
+    <pre id="apiResponse"></pre>
+  </div>
+</div>
 
 <script>
 /* -------------------- Setup & State -------------------- */
@@ -2334,6 +2428,52 @@ function openPanelForEdge(edge) {
   // update UI to reflect an "edge" selection if desired (optional)
   // e.g. propType.value = 'edge';
 }
+
+/**************************************/
+// Modal API Rest
+/**************************************/
+
+// ---- OPEN MODAL WHEN CLICK FIRST BUTTON ----
+//document.querySelector(".service-btn button:first-child")
+document.getElementById("apiRestBtn").addEventListener("click", () => {
+    document.getElementById("apiModal").style.display = "flex";
+  });
+
+// ---- CLOSE MODAL ----
+document.getElementById("apiClose").addEventListener("click", () => {
+  document.getElementById("apiModal").style.display = "none";
+});
+
+// ---- SEND API REQUEST ----
+document.getElementById("apiSendBtn").addEventListener("click", async () => {
+  const method = document.getElementById("apiMethod").value;
+  const url = "https://restcountries.com/v3.1/all?fields=name,capital";//document.getElementById("apiUrl").value;
+  const body = document.getElementById("apiBody").value.trim();
+  const resBox = document.getElementById("apiResponse");
+
+  resBox.textContent = "Loading...";
+
+  try {
+    const options = { method };
+
+    if (method !== "GET" && body.length > 0) {
+      options.headers = { "Content-Type": "application/json" };
+      options.body = body;
+    }
+
+    const res = await fetch(url, options);
+    const text = await res.text();
+
+    try {
+      resBox.textContent = JSON.stringify(JSON.parse(text), null, 2);
+    } catch {
+      resBox.textContent = text;
+    }
+
+  } catch (err) {
+    resBox.textContent = "Error:\n" + err;
+  }
+});
 
 </script>
 </body>
