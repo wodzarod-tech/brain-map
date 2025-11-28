@@ -1662,7 +1662,7 @@ canvas.addEventListener('dblclick', (ev) => {
 
   selected = null; // reset before hit detection
 
-  // 1) Try selecting a SHAPE first (so shapes take precedence)
+  // 1. Try selecting a SHAPE first (so shapes take precedence)
   for (let i = shapes.length - 1; i >= 0; i--) {
     if (shapes[i].contains(pos.x, pos.y)) {
       selected = shapes[i];
@@ -1673,7 +1673,7 @@ canvas.addEventListener('dblclick', (ev) => {
     }
   }
 
-  // 2) If no shape selected, try selecting an EDGE
+  // 2. If no shape selected, try selecting an EDGE
   for (let i = edges.length - 1; i >= 0; i--) {
     const e = edges[i];
     const pts = getEdgePoints(e);
@@ -1908,7 +1908,7 @@ function redraw() {
 	renderText(ctx, s);
   });
   
-    // 2) Draw edges AFTER shapes (so arrowheads stay on top)
+    // draw edges AFTER shapes (so arrowheads stay on top)
   edges.forEach(e => {
     // get actual arrow start/end
     const pts = getEdgePoints(e);
@@ -1920,7 +1920,7 @@ function redraw() {
       // normal arrow
       drawArrow(e.from, e.to, "#000", 2);
     }
-	});
+  });
 	
   // draw temp shape (preview)
   if (tempShape) tempShape.draw(ctx, false);
@@ -2188,7 +2188,7 @@ function getBorderPoint(shape, targetX, targetY) {
     };
 }
 
-// --- helper: return actual start/end points for an edge (matches drawArrow) ---
+// return actual start/end points for an edge (matches drawArrow)
 function getEdgePoints(edge) {
   const from = edge.from;
   const to = edge.to;
@@ -2206,7 +2206,7 @@ function getEdgePoints(edge) {
 }
 
 // detect if a dbl-click hits an edge
-// --- helper: point-to-segment distance check (keeps threshold adjustable) ---
+// point-to-segment distance check (keeps threshold adjustable)
 function isPointNearLine(px, py, x1, y1, x2, y2, threshold = 8) {
   const A = px - x1;
   const B = py - y1;
