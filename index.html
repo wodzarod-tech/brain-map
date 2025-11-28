@@ -387,6 +387,9 @@
 
 	  <!-- Right side -->
 	  <div class="right-tools">
+	  
+        <button id="exportPngBtn" title="Export PNG">📤</button>
+
 		<button id="toggleGridBtn" class="icon-btn" title="Toggle Grid">
 		  <svg viewBox="0 0 24 24" width="20" height="20">
 			<path d="M3 3h4v4H3V3zm7 0h4v4h-4V3zm7 0h4v4h-4V3zM3 10h4v4H3v-4zm7 0h4v4h-4v-4zm7 0h4v4h-4v-4zM3 17h4v4H3v-4zm7 0h4v4h-4v-4zm7 0h4v4h-4v-4z"/>
@@ -726,7 +729,29 @@ const infoHeader = document.getElementById("infoHeader");
 const infoToggle = document.getElementById("infoToggle");
 const infoContent = document.getElementById("infoContent");
 
+// to export the canvas as image PNG
+const devicePixelRatioSafe = () => window.devicePixelRatio || 1;
+
 /* -------------------- Canvas size -------------------- */
+
+// Call once on page load
+resizeCanvasToDisplaySize();
+
+// Optional: also call on window resize
+window.addEventListener("resize", () => {
+    resizeCanvasToDisplaySize();
+    redraw();
+});
+
+function resizeCanvasToDisplaySize() {
+    const { width, height } = canvas.getBoundingClientRect();
+
+    canvas.width = width * window.devicePixelRatio;
+    canvas.height = height * window.devicePixelRatio;
+
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+
 function setCanvasSizeCSS() {
   canvas.style.width = window.innerWidth + 'px';
   canvas.style.height = (window.innerHeight - toolbar.offsetHeight) + 'px';
@@ -1186,6 +1211,41 @@ infoHeader.addEventListener("click", () => {
 shapeType.addEventListener("click", () => {
     insertingText = false;
 	insertTextBtn.classList.remove("active");
+});
+
+// export to image PNG
+document.getElementById("exportPngBtn").addEventListener("click", () => {
+
+  // Use the real pixel-sized canvas (your fitCanvas() already sets canvas.width/height)
+  const src = canvas;
+
+  // Create temporary canvas with the SAME pixel dimensions
+  const tmp = document.createElement('canvas');
+  tmp.width = src.width;
+  tmp.height = src.height;
+  const tctx = tmp.getContext('2d');
+
+  // 1. Paint a white background covering the whole pixel canvas
+  tctx.fillStyle = '#ffffff';
+  tctx.fillRect(0, 0, tmp.width, tmp.height);
+
+  // 2. Draw the source canvas ON TOP (pixel-perfect)
+  // drawImage will copy the full pixel content (including everything you've drawn).
+  tctx.drawImage(src, 0, 0);
+
+  // 3. Export (use toBlob for better memory behavior)
+  tmp.toBlob((blob) => {
+    if (!blob) return;
+    
+	const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'canvas_export.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
 });
 
 // live updates from panel
@@ -1814,6 +1874,7 @@ function redraw() {
   // draw grid behind everything
   if (showGrid)
     drawGrid(ctx);
+	
   // draw shapes
   shapes.forEach(s => {
     //s.drawCenterPixel(ctx);
@@ -2061,10 +2122,11 @@ function getBorderPoint(shape, targetX, targetY) {
     if (isCircle) {
         const r = Math.abs(shape.w); // radius = shape.w (your model)
         const angle = Math.atan2(dy, dx);
-
+		const f = 1.4; // factor 1.4 to put arrow at the edge of the circle
+		
         return {
-            x: cx + Math.cos(angle) * r*1.4,
-            y: cy + Math.sin(angle) * r*1.4
+            x: cx + Math.cos(angle) * r * f,
+            y: cy + Math.sin(angle) * r * f
         };
     }
 
