@@ -842,9 +842,11 @@ class Shape {
 	ctx.shadowOffsetX = 6;
 	ctx.shadowOffsetY = 6;
 	
-	if (!isNoBorder) {
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = this.opts.border === 'bold' ? this.opts.thickness * 3 : this.opts.thickness;
+	if (!isNoBorder) { // with border
+      ctx.strokeStyle = this.opts.borderColor || "black";
+      ctx.lineWidth = this.opts.border === 'bold'
+		? this.opts.thickness * 3 
+		: this.opts.thickness;
     
 	  ctx.setLineDash(this.opts.border === 'dashed' ? [6,4] : []);
 	} else {
@@ -1268,12 +1270,77 @@ document.getElementById("exportPngBtn").addEventListener("click", () => {
 });
 
 // live updates from panel
-propFill.addEventListener('input', () => { 
+propFill.addEventListener('input', (e) => { 
+  if (!selected) return;
+
+  const fill = e.target.value;
+  selected.opts.fill = fill;
+
+  // auto-darken border if border is not "none"
+  if (selected.opts.border !== "none") {
+    selected.opts.borderColor = darkenColor(fill, 25); // 25% darker
+  }
+
+  redraw();
+  /*
   if(selected){
     selected.opts.fill = propFill.value;
 	redraw();
   }
+  */
 });
+
+// auto-darken border for shape: small color-darkening helper
+function darkenColor(hex, percent = 20) {
+  // Convert HEX → RGB
+  const num = parseInt(hex.replace("#",""), 16);
+  let r = (num >> 16) & 255;
+  let g = (num >> 8) & 255;
+  let b = num & 255;
+
+  // Convert RGB → HSL
+  r/=255; g/=255; b/=255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max+min)/2;
+
+  if (max===min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > .5 ? d / (2-max-min) : d/(max+min);
+    switch(max){
+      case r: h = (g-b)/d + (g<b?6:0); break;
+      case g: h = (b-r)/d + 2; break;
+      case b: h = (r-g)/d + 4; break;
+    }
+    h /= 6;
+  }
+
+  // DARKEN L%
+  l = Math.max(0, l - percent/100);
+
+  // Convert HSL → RGB
+  let q = l < .5 ? l*(1+s) : l + s - l*s;
+  let p = 2*l - q;
+  const hue2rgb = (p,q,t)=>{
+    if(t<0) t+=1;
+    if(t>1) t-=1;
+    if(t<1/6) return p+(q-p)*6*t;
+    if(t<1/2) return q;
+    if(t<2/3) return p+(q-p)*(2/3-t)*6;
+    return p;
+  };
+
+  r = hue2rgb(p,q,h+1/3);
+  g = hue2rgb(p,q,h);
+  b = hue2rgb(p,q,h-1/3);
+
+  // RGB → HEX
+  return "#" + 
+      Math.round(r*255).toString(16).padStart(2,"0") +
+      Math.round(g*255).toString(16).padStart(2,"0") +
+      Math.round(b*255).toString(16).padStart(2,"0");
+}
 
 propBorder.addEventListener('change', () => { if(selected){ selected.opts.border = propBorder.value; redraw(); }});
 propThickness.addEventListener('input', () => { if(selected){ selected.opts.thickness = +propThickness.value; redraw(); }});
