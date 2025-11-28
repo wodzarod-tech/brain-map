@@ -1366,6 +1366,22 @@ canvas.addEventListener('pointerdown', (ev) => {
     }
   }
   
+  
+    // --- EDGE HIT-TEST: if user clicked an edge, select it and open panel ---
+  for (let i = edges.length - 1; i >= 0; i--) {
+    const e = edges[i];
+    const pts = getEdgePoints(e); // { x1,y1,x2,y2 }
+
+    if (isPointNearLine(pos.x, pos.y, pts.x1, pts.y1, pts.x2, pts.y2, 8)) {
+      // prevent shape creation
+      selected = e;
+      // open panel like shapes
+      //openPanelForEdge(e);
+      redraw();
+      return; // IMPORTANT: stop pointerdown processing so no new shape is created
+    }
+  }
+  
   // clicking empty canvas cancels connection mode
   pendingConnection = null;
 
@@ -1443,7 +1459,7 @@ canvas.addEventListener('pointerdown', (ev) => {
   tempShape = null;
   
   // when starting to draw, close panel (avoid overlap)
-  closePanel();
+  //closePanel();
 });
 
 // when mouse is moving
@@ -1623,7 +1639,11 @@ canvas.addEventListener('click', (ev) => {
   }
 	
   for (let i = shapes.length - 1; i >= 0; i--) { if (shapes[i].contains(pos.x,pos.y)) { hit = true; break; } }
-  if (!hit) { selected = null; closePanel(); redraw(); }
+  if (!hit) { 
+    selected = null;
+	//closePanel();
+	redraw();
+  }
 });
 
 // ESC to cancel editing
@@ -1639,28 +1659,34 @@ document.addEventListener("keydown", (e) => {
 canvas.addEventListener('dblclick', (ev) => {
   ev.preventDefault();
   const pos = screenToCanvas(ev);
-  
-  // find shape under double click
-  //let hit = null;
+
+  selected = null; // reset before hit detection
+
+  // 1) Try selecting a SHAPE first (so shapes take precedence)
   for (let i = shapes.length - 1; i >= 0; i--) {
-    if (shapes[i].contains(pos.x, pos.y)){
-	  selected = shapes[i];
-	  //hit = shapes[i];
-	  // open panel for this shape
-	  openPanelForShape(selected);
-	  redraw();
-	  //return;
-	  break;
-	}
+    if (shapes[i].contains(pos.x, pos.y)) {
+      selected = shapes[i];
+      openPanelForShape(selected);
+      redraw();
+      startInlineEdit(selected);
+      return; // stop here — shape handled
+    }
   }
-  
-  if (!selected) return;
-  //if (!hit) return;
-  
-  startInlineEdit(selected);
-  //startInlineEdit(hit);
-  
-  //selected = hit;
+
+  // 2) If no shape selected, try selecting an EDGE
+  for (let i = edges.length - 1; i >= 0; i--) {
+    const e = edges[i];
+    const pts = getEdgePoints(e);
+    if (isPointNearLine(pos.x, pos.y, pts.x1, pts.y1, pts.x2, pts.y2, 10)) {
+      // Select edge (use selectedEdge if you prefer)
+      selected = e;
+      openPanelForEdge(e); // your panel opener for edges
+      redraw();
+      return;
+    }
+  }
+
+  // if neither shape nor edge -> nothing to do
 });
 
 // when right-clicking the canvas then close editor
@@ -1882,6 +1908,20 @@ function redraw() {
 	renderText(ctx, s);
   });
   
+    // 2) Draw edges AFTER shapes (so arrowheads stay on top)
+  edges.forEach(e => {
+    // get actual arrow start/end
+    const pts = getEdgePoints(e);
+
+    if (selected === e) {
+      // highlighted selected arrow
+      drawArrow(e.from, e.to, "red", 3);
+    } else {
+      // normal arrow
+      drawArrow(e.from, e.to, "#000", 2);
+    }
+	});
+	
   // draw temp shape (preview)
   if (tempShape) tempShape.draw(ctx, false);
 }
@@ -2067,7 +2107,7 @@ function centerEditorText(shape) {
 }
 
 // draw arrow/edge
-function drawArrow(from, to) {
+function drawArrow(from, to, color = "#000", lineWidth = 2) {
     // get shape centers
     const cx1 = from.type === "rectangle" ? from.x + from.w / 2 : from.x;
     const cy1 = from.type === "rectangle" ? from.y + from.h / 2 : from.y;
@@ -2082,6 +2122,9 @@ function drawArrow(from, to) {
     // draw arrow line
     const headLength = 12;
     const angle = Math.atan2(end.y - start.y, end.x - start.x);
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
 
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
@@ -2102,8 +2145,6 @@ function drawArrow(from, to) {
         end.y - headLength * Math.sin(angle + Math.PI / 6)
     );
 
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 2;
     ctx.stroke();
 }
 
@@ -2145,6 +2186,65 @@ function getBorderPoint(shape, targetX, targetY) {
         x: cx + dx * scale,
         y: cy + dy * scale
     };
+}
+
+// --- helper: return actual start/end points for an edge (matches drawArrow) ---
+function getEdgePoints(edge) {
+  const from = edge.from;
+  const to = edge.to;
+
+  const cx1 = from.type === "rectangle" ? from.x + from.w / 2 : from.x;
+  const cy1 = from.type === "rectangle" ? from.y + from.h / 2 : from.y;
+
+  const cx2 = to.type === "rectangle" ? to.x + to.w / 2 : to.x;
+  const cy2 = to.type === "rectangle" ? to.y + to.h / 2 : to.y;
+
+  const start = getBorderPoint(from, cx2, cy2); // uses your existing function
+  const end = getBorderPoint(to, cx1, cy1);
+
+  return { x1: start.x, y1: start.y, x2: end.x, y2: end.y };
+}
+
+// detect if a dbl-click hits an edge
+// --- helper: point-to-segment distance check (keeps threshold adjustable) ---
+function isPointNearLine(px, py, x1, y1, x2, y2, threshold = 8) {
+  const A = px - x1;
+  const B = py - y1;
+  const C = x2 - x1;
+  const D = y2 - y1;
+
+  const dot = A * C + B * D;
+  const lenSq = C * C + D * D;
+  let param = -1;
+  if (lenSq !== 0) param = dot / lenSq;
+
+  let xx, yy;
+  if (param < 0) { xx = x1; yy = y1; }
+  else if (param > 1) { xx = x2; yy = y2; }
+  else { xx = x1 + param * C; yy = y1 + param * D; }
+
+  const dx = px - xx;
+  const dy = py - yy;
+  return (dx * dx + dy * dy) <= threshold * threshold;
+}
+
+// Add the panel opener for edges
+function openPanelForEdge(edge) {
+  // Mark the "selected" to be the edge (you can manage using the same `selected` variable or a dedicated selectedEdge)
+  selected = edge;          // note: selected will now be an edge object — your other code should handle this if needed
+  // open the panel
+  panel.classList.add('open');
+  panel.setAttribute('aria-hidden', 'false');
+  panel.style.display = 'flex';
+
+  // If you want to show edge-specific info inside existing controls, populate them here:
+  // e.g. reuse panelText for an edge label
+  panelText.value = edge.label || ""; 
+  panelTextSize.value = edge.textSize || 14;
+  panelTextColor.value = edge.textColor || "#000000";
+
+  // update UI to reflect an "edge" selection if desired (optional)
+  // e.g. propType.value = 'edge';
 }
 
 </script>
