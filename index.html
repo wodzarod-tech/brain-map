@@ -175,7 +175,7 @@
   }
   
   #panel input[type="text"], #panel input[type="number"], #panel select {
-    width: calc(100% - 120px);
+    /*width: calc(100% - 120px);/
     padding:6px 8px;
     border:1px solid #ddd;
     border-radius:6px;
@@ -453,16 +453,28 @@
   }
 
   #apiMethod {
-    width: 90px;
+    width: 80px;
   }
 
   #apiUrl {
     flex: 1;
+	width: 60%;
     padding: 6px 8px;
   }
 
   #apiSendBtn {
-    padding: 6px 14px;
+    width: 30px;
+    height: 30px;
+	background: #007bff;
+	border: none;
+	border-radius: 6px;
+    cursor: pointer;
+    color: white;
+    transition: 0.2s;
+  }
+  
+  #apiSendBtn:hover {
+    background: #005fcc;
   }
 
   #apiBody {
@@ -793,27 +805,36 @@
     <!--<div id="apiModal" class="api-modal">-->
       <div class="api-modal-content" id="apiModalContent" style="display:none">
 	  
-      <span id="apiClose" class="api-close">&times;</span>
+		  <span id="apiClose" class="api-close">&times;</span>
 
-      <h2 style="margin-top:0;">API Tester</h2>
+		  <!--<h2 style="margin-top:0;">API Tester</h2>-->
 
-      <div class="api-row">
-        <select id="apiMethod">
-          <option>GET</option>
-          <option>POST</option>
-          <option>PUT</option>
-          <option>DELETE</option>
-        </select>
+		  <h3>Request:</h3>
+		  <div class="api-row" style="align-items:center;">
+		  
+			<select id="apiMethod">
+			  <option>GET</option>
+			  <option>POST</option>
+			  <option>PUT</option>
+			  <option>DELETE</option>
+			  <option>PATCH</option>
+			</select>
 
-        <input id="apiUrl" type="text" placeholder="https://api.example.com/users" />
-		
-        <button id="apiSendBtn">Send</button>
-      </div>
+			<input id="apiUrl" type="text" placeholder="https://api.example.com/users" />
+			
+			<button id="apiSendBtn" title="Send">
+			  <span style="display:flex; align-items:center; gap:6px;">
+				<svg width="16" height="16" viewBox="0 0 24 24">
+				  <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
+				</svg>
+			  </span>
+			</button>
+		  </div>
 
-      <textarea id="apiBody" placeholder="Request JSON body (POST / PUT)" spellcheck="false"></textarea>
+		  <textarea id="apiBody" placeholder="Write your request" spellcheck="false"></textarea>
 
-      <h3>Response:</h3>
-      <pre id="apiResponse"></pre>
+		  <h3>Response:</h3>
+		  <pre id="apiResponse"></pre>
       </div>
     <!--</div>-->
     </div>
@@ -2341,7 +2362,7 @@ function resizeShape(shape, handle, mx, my) {
 
 // saves the text before the textarea width resets
 function finishInlineEdit() {
-	debugger;
+	//debugger;
 	console.log("finishInlineEdit")
     if (!editingShape) return;
 	
