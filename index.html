@@ -426,7 +426,7 @@
 
   .api-modal-content {
     background: #fff;
-    width: 650px;
+    width: 535px;
     max-width: 95%;
     padding: 20px;
     border-radius: 12px;
@@ -781,7 +781,7 @@
 		  -->
 		  </div>
         </div>
-	</div>
+
 	<!--
     <div class="footer">
       <button id="propApply">Apply</button>
@@ -790,8 +790,8 @@
 	-->
 	
 	<!-- Modal API Rest -->
-    <div id="apiModal" class="api-modal">
-      <div class="api-modal-content">
+    <!--<div id="apiModal" class="api-modal">-->
+      <div class="api-modal-content" id="apiModalContent" style="display:none">
 	  
       <span id="apiClose" class="api-close">&times;</span>
 
@@ -815,6 +815,7 @@
       <h3>Response:</h3>
       <pre id="apiResponse"></pre>
       </div>
+    <!--</div>-->
     </div>
 
   </div>
@@ -1180,8 +1181,14 @@ function closePanelUI() {
 
 // Toggle panel open/close via handle
 panelHandle.addEventListener("click", () => {
-  if (panel.classList.contains("open")) closePanelUI();
-  else openPanel();
+  if (panel.classList.contains("open")) {
+    
+	// remove expand the panel to the left
+    panelExpanded = false;
+    panel.classList.remove("expanded");
+  
+	closePanelUI();
+  } else openPanel();
 });
 
 // Also let the close button close
@@ -2583,12 +2590,20 @@ function openPanelForEdge(edge) {
 
 // open modal
 document.getElementById("apiRestBtn").addEventListener("click", () => {
-    document.getElementById("apiModal").style.display = "flex";
-  });
+
+  // expand the panel to the left
+  panelExpanded = true;
+  panel.classList.add("expanded");
+
+  document.getElementById("apiModalContent").style.display = "block";
+  
+  //document.getElementById("apiModal").style.display = "flex";
+});
 
 // close modal
 document.getElementById("apiClose").addEventListener("click", () => {
-  document.getElementById("apiModal").style.display = "none";
+  document.getElementById("apiModalContent").style.display = "none";
+  //document.getElementById("apiModal").style.display = "none";
 });
 
 // send API request
