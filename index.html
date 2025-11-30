@@ -20,36 +20,44 @@
   #toolbar {
     height:var(--toolbar-h);
     display:flex;
-    gap:10px;
+	gap: 0; 
+    /*gap:10px;*/
     align-items:center;
-    padding:8px;
-    background:#f4f4f4;
+    /*padding:8px;*/
+    /*background:#f4f4f4;*/
+	/*border-bottom: 1px solid #ddd;*/
     box-sizing:border-box;
 	justify-content: space-between;
   }
   
-  #toolbar > * { font-size:14px; }
+  /*#toolbar > * { font-size:14px; }*/
   
+  #toolbar label {
+    white-space: nowrap;
+  }
+
+  /*
   .left-tools {
     display: flex;
     gap: 10px;
     align-items: center;
   }
-
+  */
+  /*
   .right-tools {
     margin-left: auto;         /* pushes to the right */
     display: flex;
     gap: 10px;
     align-items: center;
   }
-
+  */
   canvas {
     display:block;
 	width:100vw;
 	height:calc(100vh - var(--toolbar-h));
 	background:#fff; cursor:crosshair;
   }
-  
+/*
   button {
 	padding:6px 10px;
 	border-radius:6px;
@@ -57,7 +65,7 @@
 	background:#fff;
 	cursor:pointer;
   }
-  
+*/
   input[type="number"] { width:80px; }
   
   label {
@@ -174,7 +182,7 @@
 	color:#333;
   }
   
-  #panel input[type="text"], #panel input[type="number"], #panel select {
+  #panel input[type="text"], #panel input[type="number"] {
     /*width: calc(100% - 120px);*/
     padding:6px 8px;
     /*border:1px solid #ddd;*/
@@ -379,30 +387,45 @@
   }
   
   /* Left tools */
+  /*
   .left-tools {
     display: flex;
     align-items: center;
     gap: 4px;
 	margin-right: auto;   /* keeps them stuck to the left */
   }
+  */
 
+  #shapeType {
+    /*width: calc(100% - 120px);*/
+    padding:6px 8px;
+    /*border:1px solid #ddd;*/
+    border-radius:6px;
+    font-size:13px;
+  }
+  
   /* text button */
-  .icon-txt-btn {
-    display: inline-flex;
-    align-items: center;
+  .toolbar-icon-btn {
+    border: none;
+    background: none;
+    padding: 6px 10px;       /* small clickable area */
+    cursor: pointer;
+	/*border-radius: 6px;*/
+    /*display: inline-flex;*/
+    /*align-items: center;
     justify-content: center;
     width: 32px;       /* or whatever size you want */
     height: 32px;
     font-size: 18px;
     line-height: 1;
-    padding: 0;
+    padding: 0;*/
   }
 
-  .icon-txt-btn:hover {
+  .toolbar-icon-btn:hover {
     background: #e8e8e8;
   }
  
- .icon-txt-btn.active {
+ .toolbar-icon-btn.active {
     background-color: #0078ff;
     color: white;
   }
@@ -529,55 +552,48 @@
 				   border:1px solid #333; outline:none;">
   </textarea>
 
- <!-- small always-visible handle to open/close the panel when closed -->
-<button id="panelHandle" title="Open panel" aria-label="Open panel">▶</button>
+  <!-- small always-visible handle to open/close the panel when closed -->
+  <button id="panelHandle" title="Open panel" aria-label="Open panel">▶</button>
 
-  <!-- Slide-in Panel for Shape Properties -->
-  <div id="panel" aria-hidden="true">
-	
-    <button id="panelExpandBtn" class="panel-expand-btn">⮜</button>
+    <!--<button id="panelExpandBtn" class="panel-expand-btn">⮜</button>-->
 
     <!--<button id="panelClose" title="Close panel">✕</button>-->
+  <!-- Slide-in Panel for Shape Properties -->
+  <div id="panel" aria-hidden="true">
+	<div id="toolbar" class="button-row">
 
-	<div id="toolbar">
-	  
-	  <!-- Left side -->
-	  <div class="left-tools">
-
-		<label>Shape:
+		<!--<label>Shape:-->
+		<label>
 		  <select id="shapeType">
 			<option value="circle">Circle</option>
 			<option value="rectangle">Rectangle</option>
 		  </select>
 		</label>
 		
-		<button id="insertTextBtn" class="icon-txt-btn" title="Insert Text">✎</button>
-	  </div>
+		<button id="insertTextBtn" class="toolbar-icon-btn" title="Insert Text">✎</button>
 
-	  <!-- Right side -->
-	  <div class="right-tools">
-	  
-	    <button id="undoBtn" title="Undo">↩️</button>
+		<button id="undoBtn" class="toolbar-icon-btn" title="Undo">↩️</button>
 		
-		<button id="redoBtn" title="Redo">↪️</button>
+		<button id="redoBtn" class="toolbar-icon-btn" title="Redo">↪️</button>
 		
-		<button id="loadGraphBtn" title="Load JSON">📂</button>
+		<button id="loadGraphBtn" class="toolbar-icon-btn" title="Load JSON">📂</button>
 		
-		<button id="saveAllBtn" title="Save JSON">💾</button>
-	
-        <button id="exportPngBtn" title="Export PNG">📤</button>
+		<button id="saveAllBtn" class="toolbar-icon-btn" title="Save JSON">💾</button>
 
-		<button id="toggleGridBtn" class="icon-btn" title="Toggle Grid">
-		  <svg viewBox="0 0 24 24" width="20" height="20">
+		<button id="exportPngBtn" class="toolbar-icon-btn" title="Export PNG">📤</button>
+
+		<button id="toggleGridBtn" class="toolbar-icon-btn" title="Toggle Grid">
+		  <svg viewBox="0 0 24 24" width="15" height="15">
 			<path d="M3 3h4v4H3V3zm7 0h4v4h-4V3zm7 0h4v4h-4V3zM3 10h4v4H3v-4zm7 0h4v4h-4v-4zm7 0h4v4h-4v-4zM3 17h4v4H3v-4zm7 0h4v4h-4v-4zm7 0h4v4h-4v-4z"/>
 		  </svg>
 		</button>
 
-		<button id="clearBtn" class="small" title="Clear">🗑️</button>
-		<button id="deleteBtn" style="display:none">Delete Selected</button>
-	  </div>
+		<button id="clearBtn" class="toolbar-icon-btn" title="Clear">🗑️</button>
+		<button id="deleteBtn" class="toolbar-icon-btn" style="display:none">Delete Selected</button>
 	</div>
 
+
+  
     <!-- Tabs Header -->
     <div id="panelTabs">
       <button class="tab active" data-tab="styleTab">Design</button>
@@ -890,8 +906,8 @@ const deleteBtn = document.getElementById('deleteBtn');
 
 const panel = document.getElementById('panel');
 const panelHandle = document.getElementById("panelHandle");
-const panelExpandBtn = document.getElementById("panelExpandBtn");
-const panelClose = document.getElementById('panelClose');
+//const panelExpandBtn = document.getElementById("panelExpandBtn");
+//const panelClose = document.getElementById('panelClose');
 const propType = document.getElementById('propType');
 const propFill = document.getElementById('propFill');
 const propBorder = document.getElementById('propBorder');
@@ -1252,13 +1268,14 @@ panelHandle.addEventListener("click", () => {
 });
 
 // Also let the close button close
-panelClose.addEventListener("click", () => {
+/*panelClose.addEventListener("click", () => {
   closePanelUI();
-});
+});*/
 
 //panelClose.addEventListener('click', closePanel);
 
 // Expand button toggles width (existing expand functionality)
+/*
 panelExpandBtn.addEventListener("click", () => {
   panelExpanded = !panelExpanded;
   if (panelExpanded) {
@@ -1269,7 +1286,7 @@ panelExpandBtn.addEventListener("click", () => {
     panelExpandBtn.textContent = "⮜";
   }
 });
-
+*/
 // expand panel
 /*panelExpandBtn.addEventListener("click", () => {
   panelExpanded = !panelExpanded;
