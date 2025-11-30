@@ -294,8 +294,8 @@
     width: 100%;
 	height: 80px;
 	padding: 6px;
-	border: 1px solid #ccc;
-	border-radius: 6px;
+	/*border: 1px solid #ccc;*/
+	/*border-radius: 6px;*/
 	resize: vertical;
 	font-size: 13px;
 	box-sizing: border-box;
@@ -303,11 +303,11 @@
 
   /* delete textboxes */
   .textbox-wrapper {
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    padding: 6px;
-    margin-bottom: 8px;
-    background: #fafafa;
+    /*border: 1px solid #ccc;*/
+    /*border-radius: 6px;*/
+    /*padding: 6px;*/
+    /*margin-bottom: 8px;*/
+    /*background: #fafafa;*/
   }
   
   .textbox-header {
@@ -324,18 +324,7 @@
     margin-top: 6px;
     display: block; /* collapsible */
   }
-
-  .textbox {
-    width: 100%;
-    height: 80px;
-    padding: 6px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    resize: vertical;
-    font-size: 13px;
-    box-sizing: border-box;
-  }
-
+  
   .collapseBtn {
     font-size: 14px;
     cursor: pointer;
@@ -345,7 +334,7 @@
   }
 
   /* delete button */
-    .deleteTextboxBtn {
+  .deleteTextboxBtn {
     background: #e57373;
     border: none;
     color: white;
@@ -713,17 +702,33 @@
 			<span id="infoToggle" style="font-size:13px; opacity:0.7;">▼</span>
 			<h3 style="margin:0; font-size:16px;">Notes</h3>
 		  </div>
-  		  <button id="addTextboxBtn" class="icon-btn" title="Add Textbox">＋</button>
+		
+		  <button id="addTextboxBtn"
+		    class="icon-btn"
+			title="Add Textbox"
+			style="
+			  border:none;
+			  background:transparent;
+			  cursor:pointer;
+			  font-size:20px;
+			  line-height:20px;
+			  color:#1a73e8;
+			  padding:4px 6px;
+			  "
+			onmouseover="this.style.color='#0b59c7'"
+			onmouseout="this.style.color='#1a73e8'"
+		  >＋
+		  </button>
         </div>
 	
 	    <!-- content -->
-        <div id="infoContent" style="padding:10px; display:block;">
-          <header style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+        <div id="infoContent" style="padding:0px; display:block;">
+          <header style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0px;">
           </header>
 
-	      <div id="textList" style="margin-top:12px; display:flex; flex-direction:column; gap:10px;"></div>
+	      <div id="textList" style="margin-top:0px; display:flex; flex-direction:column; gap:0px;"></div>
       </div>
-	</div>
+	  </div>
 	
 	<!-- Services: collapsible wrapper -->
 	<div id="servicesSection" style="
@@ -820,50 +825,48 @@
 		  <button class="service-btn">K</button>
 		  <button class="service-btn">L</button>
 		  </div>
-        </div>
 
-	<!--
+			<!-- Modal API Rest -->
+			<div class="api-modal-content" id="apiModalContent" style="display:none">
+			  
+			  <span id="apiClose" class="api-close">&times;</span>
+
+			  <h3>Request:</h3>
+			  <div class="api-row" style="align-items:center;">
+				  
+			  <select id="apiMethod">
+			   <option>GET</option>
+				  <option>POST</option>
+				  <option>PUT</option>
+				  <option>DELETE</option>
+				  <option>PATCH</option>
+				</select>
+
+				<input id="apiUrl" type="text" placeholder="https://api.example.com/users" />
+				
+				<button id="apiSendBtn" title="Send">
+				  <span style="display:flex; align-items:center; gap:6px;">
+					<svg viewBox="0 0 24 24">
+					  <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
+					</svg>
+				  </span>
+				</button>
+			  </div>
+
+			  <textarea id="apiBody" placeholder="Write your request" spellcheck="false"></textarea>
+
+			  <h3>Response:</h3>
+			  <pre id="apiResponse"></pre>
+			  </div>
+			</div>
+		</div>
+  </div>
+  	<!--
     <div class="footer">
       <button id="propApply">Apply</button>
       <button id="propReset">Reset</button>
     </div>
 	-->
-	
-	<!-- Modal API Rest -->
-    <div class="api-modal-content" id="apiModalContent" style="display:none">
-	  
-	  <span id="apiClose" class="api-close">&times;</span>
-
-	  <h3>Request:</h3>
-	  <div class="api-row" style="align-items:center;">
-		  
-      <select id="apiMethod">
-	   <option>GET</option>
-		  <option>POST</option>
-		  <option>PUT</option>
-		  <option>DELETE</option>
-		  <option>PATCH</option>
-		</select>
-
-		<input id="apiUrl" type="text" placeholder="https://api.example.com/users" />
-		
-		<button id="apiSendBtn" title="Send">
-		  <span style="display:flex; align-items:center; gap:6px;">
-			<svg viewBox="0 0 24 24">
-			  <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
-			</svg>
-		  </span>
-		</button>
-	  </div>
-
-	  <textarea id="apiBody" placeholder="Write your request" spellcheck="false"></textarea>
-
-	  <h3>Response:</h3>
-	  <pre id="apiResponse"></pre>
-      </div>
-    </div>
-
-  </div>
   </div>
 
 <script>
@@ -937,10 +940,14 @@ let pendingConnection = null; // when first shape selected
 let justCreatedShape = null; // for move shape in the first attempt
 let shapeIsMoving = false;
 
-// collapse/expand behabior
+// collapse/expand behavior
 const infoHeader = document.getElementById("infoHeader");
 const infoToggle = document.getElementById("infoToggle");
 const infoContent = document.getElementById("infoContent");
+
+const servicesHeader = document.getElementById("servicesHeader");
+const servicesToggle = document.getElementById("servicesToggle");
+const servicesContent = document.getElementById("servicesContent");
 
 // to export the canvas as image PNG
 const devicePixelRatioSafe = () => window.devicePixelRatio || 1;
@@ -1384,6 +1391,9 @@ document.querySelectorAll("#panelTabs .tab").forEach(btn => {
 addTextboxBtn.addEventListener("click", (e) => {
   e.stopPropagation(); // prevents collapsing
 
+  infoContent.style.display = "block";
+  infoToggle.textContent = "▼"; // expanded
+	
   // wrapper
   const wrapper = document.createElement("div");
   wrapper.className = "textbox-wrapper";
@@ -1404,7 +1414,7 @@ addTextboxBtn.addEventListener("click", (e) => {
   // title
   const title = document.createElement("span");
   title.contentEditable = "true";
-  title.textContent = "Title";
+  title.textContent = "Add title";
   title.style.outline = "none";      // removes border when editing
   title.style.cursor = "text";
   title.style.whiteSpace = "nowrap";
@@ -1492,7 +1502,7 @@ insertTextBtn.addEventListener("click", () => {
   insertTextBtn.classList.toggle("active", insertingText);
 });
 
-// Function / Docs: collapse/expand behabior
+// Function / Notes: collapse/expand behabior
 infoHeader.addEventListener("click", () => {
   const isOpen = infoContent.style.display !== "none";
 
@@ -1504,6 +1514,20 @@ infoHeader.addEventListener("click", () => {
     infoToggle.textContent = "▼"; // expanded
   }
 });
+
+// Function / Services: collapse/expand behabior
+servicesHeader.addEventListener("click", () => {
+  const isOpen = servicesContent.style.display !== "none";
+
+  if (isOpen) {
+    servicesContent.style.display = "none";
+    servicesToggle.textContent = "►"; // collapsed
+  } else {
+    servicesContent.style.display = "block";
+    servicesToggle.textContent = "▼"; // expanded
+  }
+});
+
 
 shapeType.addEventListener("click", () => {
     insertingText = false;
