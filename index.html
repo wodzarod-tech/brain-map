@@ -175,9 +175,9 @@
   }
   
   #panel input[type="text"], #panel input[type="number"], #panel select {
-    /*width: calc(100% - 120px);/
+    /*width: calc(100% - 120px);*/
     padding:6px 8px;
-    border:1px solid #ddd;
+    /*border:1px solid #ddd;*/
     border-radius:6px;
     font-size:13px;
   }
@@ -425,13 +425,19 @@
   }
 
   .api-modal-content {
-    background: #fff;
-    width: 535px;
-    max-width: 95%;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 10px 35px rgba(0,0,0,0.3);
-    animation: popup 0.15s ease-out;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background: #fff;
+	border: 1px solid #d0d0d0; /* border */
+	border-radius: 12px;
+	padding: 20px;
+	/*padding: 8px 12px;*/
+	width: 530px;
+	font-family: sans-serif;
+	/*    max-width: 95%;
+	box-shadow: 0 10px 35px rgba(0,0,0,0.3);
+	animation: popup 0.15s ease-out;*/
   }
 
   @keyframes popup {
@@ -448,19 +454,43 @@
 
   .api-row {
     display: flex;
-    gap: 6px;
+	align-items: center;
+    gap: 10px;
     margin-bottom: 8px;
+	  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  width: 530px;
+  font-family: sans-serif;
   }
 
   #apiMethod {
-    width: 80px;
+	border: none;
+	background: none;
+	font-size: 14px;
+	padding: 4px;
+	cursor: pointer;
+	/*    width: 80px;*/
   }
+  
+  #apiMethod:focus {
+  outline: none;
+}
 
   #apiUrl {
     flex: 1;
+	border: none;
+	font-size: 14px;
+	padding: 4px;
+	/*
 	width: 60%;
-    padding: 6px 8px;
+    padding: 6px 8px;*/
   }
+
+#apiUrl:focus {
+  outline: none;
+}
 
   #apiSendBtn {
     width: 30px;
@@ -802,41 +832,37 @@
 	-->
 	
 	<!-- Modal API Rest -->
-    <!--<div id="apiModal" class="api-modal">-->
-      <div class="api-modal-content" id="apiModalContent" style="display:none">
+    <div class="api-modal-content" id="apiModalContent" style="display:none">
 	  
-		  <span id="apiClose" class="api-close">&times;</span>
+	  <span id="apiClose" class="api-close">&times;</span>
 
-		  <!--<h2 style="margin-top:0;">API Tester</h2>-->
-
-		  <h3>Request:</h3>
-		  <div class="api-row" style="align-items:center;">
+	  <h3>Request:</h3>
+	  <div class="api-row" style="align-items:center;">
 		  
-			<select id="apiMethod">
-			  <option>GET</option>
-			  <option>POST</option>
-			  <option>PUT</option>
-			  <option>DELETE</option>
-			  <option>PATCH</option>
-			</select>
+      <select id="apiMethod">
+	   <option>GET</option>
+		  <option>POST</option>
+		  <option>PUT</option>
+		  <option>DELETE</option>
+		  <option>PATCH</option>
+		</select>
 
-			<input id="apiUrl" type="text" placeholder="https://api.example.com/users" />
-			
-			<button id="apiSendBtn" title="Send">
-			  <span style="display:flex; align-items:center; gap:6px;">
-				<svg width="16" height="16" viewBox="0 0 24 24">
-				  <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
-				</svg>
-			  </span>
-			</button>
-		  </div>
+		<input id="apiUrl" type="text" placeholder="https://api.example.com/users" />
+		
+		<button id="apiSendBtn" title="Send">
+		  <span style="display:flex; align-items:center; gap:6px;">
+			<svg viewBox="0 0 24 24">
+			  <path d="M2 21l21-9L2 3v7l15 2-15 2z" fill="currentColor"/>
+			</svg>
+		  </span>
+		</button>
+	  </div>
 
-		  <textarea id="apiBody" placeholder="Write your request" spellcheck="false"></textarea>
+	  <textarea id="apiBody" placeholder="Write your request" spellcheck="false"></textarea>
 
-		  <h3>Response:</h3>
-		  <pre id="apiResponse"></pre>
+	  <h3>Response:</h3>
+	  <pre id="apiResponse"></pre>
       </div>
-    <!--</div>-->
     </div>
 
   </div>
