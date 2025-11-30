@@ -66,7 +66,7 @@
 	gap:6px;
   }
 
-  /* Slide-in panel (Option C) */
+  /* Slide-in panel */
   #panel {
     position: fixed;
     right: 0;
@@ -74,18 +74,77 @@
     width: var(--panel-w);
     height: 100vh;
     background: #ffffff;
-    border-left: 1px solid #e3e3e3;
-    box-shadow: -18px 0 40px rgba(10,10,10,0.06);
+	border-left: 1px solid #ccc;
+    /*border-left: 1px solid #e3e3e3;*/
+    box-shadow: -4px 0 16px rgba(0,0,0,0.15);
+	/*box-shadow: -18px 0 40px rgba(10,10,10,0.06);*/
     transform: translateX(100%); /* animation */
-    transition: transform 280ms cubic-bezier(.2,.8,.2,1); /* animation */
-    z-index: 120;
-    padding: 16px;
+    transition: width 0.25s ease;
+	/*transition: transform 280ms cubic-bezier(.2,.8,.2,1);*/ /* animation */
+    z-index: 2000;
+	/*z-index: 120;*/
+    padding: 10px;/*16px;*/
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 8px;
+	overflow-y: auto;
+    overflow-x: hidden;
   }
   
+  /* Visible handle at the right edge to toggle panel open/closed */
+#panelHandle {
+  position: fixed;
+  right: 0;                 /* sit flush on the right edge */
+  top: 40%;                 /* adjust vertical position as you like */
+  transform: translateX(50%); /* slightly outside so the arrow points inward */
+  z-index: 3001;
+  width: 28px;
+  height: 48px;
+  border-radius: 6px 0 0 6px;
+  background: #444;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+  font-weight: 700;
+}
+
+/* when panel is open, hide the handle if you prefer */
+#panel.open + #panelHandle,
+#panelHandle.hidden { display: none; }
+
+  /* Expand panel */
+  #panel.expanded {
+    width: 600px; /* expanded size */
+  }
+
+  /* Expand button */
+  .panel-expand-btn {
+    position: absolute;
+    left: -24px;
+    top: 12px;
+	z-index: 3000; /* ensure on top of everything */
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: #444;
+    color: white;
+    border-radius: 4px 0 0 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 0;
+    transition: background 0.2s;
+  }
+
+  .panel-expand-btn:hover {
+    background: #222;
+  }
+
   #panel.open { 
     transform: translateX(0); /* animation */
   }
@@ -354,7 +413,7 @@
     color: white;
   }
 
-  <!-- Modal API Rest -->
+  /* Modal API Rest */
   .api-modal {
     display: none;
     position: fixed;
@@ -434,15 +493,21 @@
 				   border:1px solid #333; outline:none;">
   </textarea>
 
+ <!-- small always-visible handle to open/close the panel when closed -->
+<button id="panelHandle" title="Open panel" aria-label="Open panel">▶</button>
+
   <!-- Slide-in Panel for Shape Properties -->
   <div id="panel" aria-hidden="true">
 	
+    <button id="panelExpandBtn" class="panel-expand-btn">⮜</button>
+
     <button id="panelClose" title="Close panel">✕</button>
 
 	<div id="toolbar">
 	  
 	  <!-- Left side -->
 	  <div class="left-tools">
+
 		<label>Shape:
 		  <select id="shapeType">
 			<option value="circle">Circle</option>
@@ -701,18 +766,19 @@
 			     alt="Twitter"
 			     style="width:50px; height:50px;">
 		  </button>
-
+		
 		  <!-- row 2 -->
-		  <button class="service-btn">E</button>
+		  <!--<button class="service-btn">E</button>
 		  <button class="service-btn">F</button>
 		  <button class="service-btn">G</button>
 		  <button class="service-btn">H</button>
-
+		  -->
 		  <!-- row 3 -->
-		  <button class="service-btn">I</button>
+		  <!--<button class="service-btn">I</button>
 		  <button class="service-btn">J</button>
 		  <button class="service-btn">K</button>
 		  <button class="service-btn">L</button>
+		  -->
 		  </div>
         </div>
 	</div>
@@ -766,6 +832,8 @@ const clearBtn = document.getElementById('clearBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 
 const panel = document.getElementById('panel');
+const panelHandle = document.getElementById("panelHandle");
+const panelExpandBtn = document.getElementById("panelExpandBtn");
 const panelClose = document.getElementById('panelClose');
 const propType = document.getElementById('propType');
 const propFill = document.getElementById('propFill');
@@ -830,6 +898,9 @@ const infoContent = document.getElementById("infoContent");
 
 // to export the canvas as image PNG
 const devicePixelRatioSafe = () => window.devicePixelRatio || 1;
+
+// expand panel
+let panelExpanded = false;
 
 /* -------------------- Canvas size -------------------- */
 
@@ -1091,6 +1162,60 @@ class Shape {
 }
 
 /* -------------------- Panel Control -------------------- */
+// Open panel (show) — reuses your existing panel open logic
+function openPanel() {
+  panel.classList.add("open");
+  panel.setAttribute("aria-hidden", "false");
+  panel.style.display = "flex";
+  panelHandle.classList.add("hidden"); // hide handle while open
+}
+
+// Close panel (hide)
+function closePanelUI() {
+  panel.classList.remove("open");
+  panel.setAttribute("aria-hidden", "true");
+  // keep display set so CSS transition works; you can also set display none after transition if you want
+  panelHandle.classList.remove("hidden"); // show handle when closed
+}
+
+// Toggle panel open/close via handle
+panelHandle.addEventListener("click", () => {
+  if (panel.classList.contains("open")) closePanelUI();
+  else openPanel();
+});
+
+// Also let the close button close
+panelClose.addEventListener("click", () => {
+  closePanelUI();
+});
+
+//panelClose.addEventListener('click', closePanel);
+
+// Expand button toggles width (existing expand functionality)
+panelExpandBtn.addEventListener("click", () => {
+  panelExpanded = !panelExpanded;
+  if (panelExpanded) {
+    panel.classList.add("expanded");
+    panelExpandBtn.textContent = "⮞";
+  } else {
+    panel.classList.remove("expanded");
+    panelExpandBtn.textContent = "⮜";
+  }
+});
+
+// expand panel
+/*panelExpandBtn.addEventListener("click", () => {
+  panelExpanded = !panelExpanded;
+
+  if (panelExpanded) {
+    panel.classList.add("expanded");
+    panelExpandBtn.textContent = "⮞";   // arrow flips direction
+  } else {
+    panel.classList.remove("expanded");
+    panelExpandBtn.textContent = "⮜";
+  }
+});
+*/
 /*
 used when selecting a shape
 
@@ -1461,8 +1586,6 @@ propH.addEventListener('input', () => { if(!selected) return; if(selected.type =
 
 //propApply.addEventListener('click', () => { applyPanelToShape(false); closePanel(); });
 //propReset.addEventListener('click', () => { syncPanelToShape(); });
-
-panelClose.addEventListener('click', closePanel);
 
 /* -------------------- Pointer Events -------------------- */
 // when mouse click
@@ -1835,12 +1958,61 @@ canvas.addEventListener('click', (ev) => {
 
 // ESC to cancel editing
 document.addEventListener("keydown", (e) => {
-    if (!editingShape) return; // no editor open -> do nothing
 
+	// when right-clicking outside the canvas, close editor
+	document.addEventListener("contextmenu", (ev) => {
+	    if (!editingShape) return; // no editor open -> do nothing
+
+		// clicked inside the text editor → keep editing
+		if (textEditor.contains(ev.target)) return;
+			
+		// clicked on canvas → canvas handler above handles it
+		if (ev.target === canvas) return;
+			
+	    // otherwise right-click outside → close editor
+		ev.preventDefault();
+		finishInlineEdit();
+	});
+	
+	// Save changes when user leaves input or presses Enter
     if (e.key === "Escape") {
         finishInlineEdit();
+		
+		closePanelUI();
+		//closePanel();
+		selected = null;
+		redraw(); 
     }
 });
+
+// deselect when clicking outside panel will already close because canvas handles it
+// close panel on Esc
+/*
+document.addEventListener('keydown', (ev) => {
+
+	// when right-clicking outside the canvas, close editor
+	document.addEventListener("contextmenu", (e) => {
+		if (!editingShape) return;
+
+		// clicked inside the text editor → keep editing
+		if (textEditor.contains(e.target)) return;
+
+		// clicked on canvas → canvas handler above handles it
+		if (e.target === canvas) return;
+
+		// otherwise right-click outside → close editor
+		e.preventDefault();
+		finishInlineEdit();
+	});
+
+	// Save changes when user leaves input or presses Enter
+	if (ev.key === 'Escape') { 
+		closePanel();
+		selected = null;
+		redraw(); 
+	}
+});
+*/
 
 // when double-left click
 canvas.addEventListener('dblclick', (ev) => {
@@ -1913,33 +2085,6 @@ textEditor.addEventListener("blur", finishInlineEdit);
 
 textEditor.addEventListener("input", () => {
     autoResizeTextEditor();
-});
-
-// deselect when clicking outside panel will already close because canvas handles it
-// close panel on Esc
-document.addEventListener('keydown', (ev) => {
-
-	// when right-clicking outside the canvas, close editor
-	document.addEventListener("contextmenu", (e) => {
-		if (!editingShape) return;
-
-		// clicked inside the text editor → keep editing
-		if (textEditor.contains(e.target)) return;
-
-		// clicked on canvas → canvas handler above handles it
-		if (e.target === canvas) return;
-
-		// otherwise right-click outside → close editor
-		e.preventDefault();
-		finishInlineEdit();
-	});
-
-	// Save changes when user leaves input or presses Enter
-	if (ev.key === 'Escape') { 
-		closePanel();
-		selected = null;
-		redraw(); 
-	}
 });
 
 /* -------------------- Drawing Helpers -------------------- */
