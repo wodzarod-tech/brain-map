@@ -356,71 +356,71 @@
 
   <!-- Modal API Rest -->
   .api-modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  z-index: 9999;
-  justify-content: center;
-  align-items: center;
-}
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+  }
 
-.api-modal-content {
-  background: #fff;
-  width: 650px;
-  max-width: 95%;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 10px 35px rgba(0,0,0,0.3);
-  animation: popup 0.15s ease-out;
-}
+  .api-modal-content {
+    background: #fff;
+    width: 650px;
+    max-width: 95%;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.3);
+    animation: popup 0.15s ease-out;
+  }
 
-@keyframes popup {
-  from { transform: scale(0.85); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
-}
+  @keyframes popup {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
 
-.api-close {
-  float: right;
-  font-size: 28px;
-  cursor: pointer;
-  color: #444;
-}
+  .api-close {
+    float: right;
+    font-size: 28px;
+    cursor: pointer;
+    color: #444;
+  }
 
-.api-row {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 8px;
-}
+  .api-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
 
-#apiMethod {
-  width: 90px;
-}
+  #apiMethod {
+    width: 90px;
+  }
 
-#apiUrl {
-  flex: 1;
-  padding: 6px 8px;
-}
+  #apiUrl {
+    flex: 1;
+    padding: 6px 8px;
+  }
 
-#apiSendBtn {
-  padding: 6px 14px;
-}
+  #apiSendBtn {
+    padding: 6px 14px;
+  }
 
-#apiBody {
-  width: 100%;
-  height: 120px;
-  margin-bottom: 10px;
-  font-family: monospace;
-  padding: 8px;
-}
+  #apiBody {
+    width: 100%;
+    height: 120px;
+    margin-bottom: 10px;
+    font-family: monospace;
+    padding: 8px;
+  }
 
-#apiResponse {
-  background: #f4f4f4;
-  padding: 12px;
-  max-height: 260px;
-  overflow: auto;
-  border-radius: 6px;
-}
+  #apiResponse {
+    background: #f4f4f4;
+    padding: 12px;
+    max-height: 260px;
+    overflow: auto;
+    border-radius: 6px;
+  }
 
 </style>
 </head>
@@ -716,38 +716,43 @@
 		  </div>
         </div>
 	</div>
-	
+	<!--
     <div class="footer">
       <button id="propApply">Apply</button>
       <button id="propReset">Reset</button>
     </div>
-  </div>
-  </div>
-  <!-- Modal API Rest -->
-<div id="apiModal" class="api-modal">
-  <div class="api-modal-content">
-    <span id="apiClose" class="api-close">&times;</span>
+	-->
+	
+	<!-- Modal API Rest -->
+    <div id="apiModal" class="api-modal">
+      <div class="api-modal-content">
+	  
+      <span id="apiClose" class="api-close">&times;</span>
 
-    <h2 style="margin-top:0;">API Tester</h2>
+      <h2 style="margin-top:0;">API Tester</h2>
 
-    <div class="api-row">
-      <select id="apiMethod">
-        <option>GET</option>
-        <option>POST</option>
-        <option>PUT</option>
-        <option>DELETE</option>
-      </select>
+      <div class="api-row">
+        <select id="apiMethod">
+          <option>GET</option>
+          <option>POST</option>
+          <option>PUT</option>
+          <option>DELETE</option>
+        </select>
 
-      <input id="apiUrl" type="text" placeholder="https://api.example.com/users" />
-      <button id="apiSendBtn">Send</button>
+        <input id="apiUrl" type="text" placeholder="https://api.example.com/users" />
+		
+        <button id="apiSendBtn">Send</button>
+      </div>
+
+      <textarea id="apiBody" placeholder="Request JSON body (POST / PUT)" spellcheck="false"></textarea>
+
+      <h3>Response:</h3>
+      <pre id="apiResponse"></pre>
+      </div>
     </div>
 
-    <textarea id="apiBody" placeholder="Request JSON body (POST / PUT)" spellcheck="false"></textarea>
-
-    <h3>Response:</h3>
-    <pre id="apiResponse"></pre>
   </div>
-</div>
+  </div>
 
 <script>
 /* -------------------- Setup & State -------------------- */
@@ -773,8 +778,8 @@ const propX = document.getElementById('propX');
 const propY = document.getElementById('propY');
 const propW = document.getElementById('propW');
 const propH = document.getElementById('propH');
-const propApply = document.getElementById('propApply');
-const propReset = document.getElementById('propReset');
+//const propApply = document.getElementById('propApply');
+//const propReset = document.getElementById('propReset');
 
 const panelText = document.getElementById('panelText');
 const panelTextSize = document.getElementById('panelTextSize');
@@ -1454,8 +1459,8 @@ propRounded.addEventListener('change', () => {
 propW.addEventListener('input', () => { if(!selected) return; if(selected.type === 'rectangle'){ selected.w = +propW.value; if(selected.rounded) selected.radius = Math.max(0, Math.min(Math.abs(selected.w), Math.abs(selected.h)) * 0.1); } else { selected.w = +propW.value; selected.h = +propW.value; } redraw(); });
 propH.addEventListener('input', () => { if(!selected) return; if(selected.type === 'rectangle'){ selected.h = +propH.value; if(selected.rounded) selected.radius = Math.max(0, Math.min(Math.abs(selected.w), Math.abs(selected.h)) * 0.1); } else { const r = +propH.value; selected.w = r; selected.h = r; } redraw(); });
 
-propApply.addEventListener('click', () => { applyPanelToShape(false); closePanel(); });
-propReset.addEventListener('click', () => { syncPanelToShape(); });
+//propApply.addEventListener('click', () => { applyPanelToShape(false); closePanel(); });
+//propReset.addEventListener('click', () => { syncPanelToShape(); });
 
 panelClose.addEventListener('click', closePanel);
 
@@ -2429,25 +2434,23 @@ function openPanelForEdge(edge) {
   // e.g. propType.value = 'edge';
 }
 
-/**************************************/
-// Modal API Rest
-/**************************************/
+/* -------------------- Modal API Rest -------------------- */
 
-// ---- OPEN MODAL WHEN CLICK FIRST BUTTON ----
-//document.querySelector(".service-btn button:first-child")
+// open modal
 document.getElementById("apiRestBtn").addEventListener("click", () => {
     document.getElementById("apiModal").style.display = "flex";
   });
 
-// ---- CLOSE MODAL ----
+// close modal
 document.getElementById("apiClose").addEventListener("click", () => {
   document.getElementById("apiModal").style.display = "none";
 });
 
-// ---- SEND API REQUEST ----
+// send API request
 document.getElementById("apiSendBtn").addEventListener("click", async () => {
   const method = document.getElementById("apiMethod").value;
-  const url = "https://restcountries.com/v3.1/all?fields=name,capital";//document.getElementById("apiUrl").value;
+  //const url = document.getElementById("apiUrl").value;
+  const url = "https://restcountries.com/v3.1/all?fields=name,capital";
   const body = document.getElementById("apiBody").value.trim();
   const resBox = document.getElementById("apiResponse");
 
