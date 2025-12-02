@@ -1309,6 +1309,9 @@ panelHandle.addEventListener("click", () => {
 	// remove expand the panel to the left
     panelExpanded = false;
     panel.classList.remove("expanded");
+	
+	// hidden modal for services
+	document.getElementById("apiModalContent").style.display = "none";
   
 	closePanelUI();
   } else {
