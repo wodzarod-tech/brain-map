@@ -116,7 +116,7 @@
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: inherit;
     box-shadow: 0 6px 18px rgba(0,0,0,0.15);
     font-weight: 700;
   }
@@ -555,7 +555,7 @@
   </textarea>
 
   <!-- small always-visible handle to open/close the panel when closed -->
-  <button id="panelHandle" title="Open panel" aria-label="Open panel">▶</button>
+  <button id="panelHandle" title="Open panel">►</button>
 
     <!--<button id="panelExpandBtn" class="panel-expand-btn">⮜</button>-->
 
@@ -1294,20 +1294,28 @@ function openPanel() {
 function closePanelUI() {
   panel.classList.remove("open");
   panel.setAttribute("aria-hidden", "true");
+  
   // keep display set so CSS transition works; you can also set display none after transition if you want
   panelHandle.classList.remove("hidden"); // show handle when closed
 }
 
 // Toggle panel open/close via handle
 panelHandle.addEventListener("click", () => {
+
   if (panel.classList.contains("open")) {
-    
+    panelHandle.innerText = "►";
+	panelHandle.title = "Open panel";
+	
 	// remove expand the panel to the left
     panelExpanded = false;
     panel.classList.remove("expanded");
   
 	closePanelUI();
-  } else openPanel();
+  } else {
+    panelHandle.innerText = "◄";
+	panelHandle.title = "Close panel";
+	openPanel();
+	}
 });
 
 // Also let the close button close
@@ -1367,11 +1375,11 @@ function openPanelForShape(shape) {
   // ensure panel is visible (force reflow in odd cases)
   panel.style.display = 'flex';
 }
-
+/*
 function closePanel() {
   panel.classList.remove('open');
   panel.setAttribute('aria-hidden', 'true');
-}
+}*/
 
 // syncing the Panel
 function syncPanelToShape() {
@@ -2188,7 +2196,8 @@ clearBtn.addEventListener('click', () => {
   shapes = [];
   selected = null;
   tempShape = null;
-  closePanel();
+  closePanelUI();
+  //closePanel();
   redraw();
 });
 
@@ -2196,7 +2205,8 @@ deleteBtn.addEventListener('click', () => {
   if (selected) { 
     shapes = shapes.filter(s => s !== selected); 
 	selected = null; 
-	closePanel(); 
+	closePanelUI();
+	//closePanel(); 
 	redraw(); 
   }
 });
@@ -2219,7 +2229,8 @@ document.addEventListener('keydown', (e) => {
 	
     selected = null;
 	
-	closePanel();
+	closePanelUI();
+	//closePanel();
 	redraw();
   }
 });
