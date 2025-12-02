@@ -101,29 +101,31 @@
   }
   
   /* Visible handle at the right edge to toggle panel open/closed */
-#panelHandle {
-  position: fixed;
-  right: 0;                 /* sit flush on the right edge */
-  top: 40%;                 /* adjust vertical position as you like */
-  transform: translateX(50%); /* slightly outside so the arrow points inward */
-  z-index: 3001;
-  width: 28px;
-  height: 48px;
-  border-radius: 6px 0 0 6px;
-  background: #444;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-  font-weight: 700;
-}
+  #panelHandle {
+    position: fixed;
+    right: 0;                 /* sit flush on the right edge */
+    top: 40%;                 /* adjust vertical position as you like */
+    transform: translateX(50%); /* slightly outside so the arrow points inward */
+    z-index: 3001;
+    width: 28px;
+    height: 48px;
+    border-radius: 6px 0 0 6px;
+    background: #444;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    font-weight: 700;
+  }
 
-/* when panel is open, hide the handle if you prefer */
-#panel.open + #panelHandle,
-#panelHandle.hidden { display: none; }
+  /* when panel is open, hide the handle if you prefer */
+  /*#panel.open + #panelHandle,
+  #panelHandle.hidden {
+    display: none;
+  }*/
 
   /* Expand panel */
   #panel.expanded {
@@ -1177,7 +1179,7 @@ class Shape {
     ctx.lineWidth = 2;
 	
 	for (const e of edges) {
-	debugger;
+	//debugger;
         if (selected === e) {
             drawArrow(e.from, e.to, "red", 3);
         } else {
@@ -1410,7 +1412,7 @@ function syncPanelToShape() {
   // ---------------------------
   // This both creates the object on the selected shape (if missing)
   // and returns a local reference so 'edge' is always defined.
-  debugger;
+  //debugger;
   if (!selected.arrow || typeof selected.arrow !== 'object') {
     // initialize with sensible defaults
     selected.arrow = {
@@ -1699,7 +1701,7 @@ propFill.addEventListener('input', (e) => {
 // live updates for edge from panel
 propArrowColor.addEventListener('input', (e) => { 
 
-debugger;
+//debugger;
   if (!selected) return;
 
   ensureArrowObject();
@@ -1933,7 +1935,7 @@ canvas.addEventListener('pointerdown', (ev) => {
       return;
     }
   }
-debugger;
+//debugger;
   // -----------------------------
   // HIT EDGE
   // -----------------------------
@@ -2103,7 +2105,7 @@ canvas.addEventListener('pointermove', (ev) => {
     return;
   }
 
-debugger;
+//debugger;
   if(isDrawing || isResizing || isDragging) {
 	  // update cursor
 	  let cursor = 'crosshair'; // for isDrawing
@@ -2129,7 +2131,7 @@ debugger;
 
 // when mouse is up
 canvas.addEventListener('pointerup', (ev) => {
-debugger;
+//debugger;
   ev.preventDefault();
   canvas.releasePointerCapture(ev.pointerId);
   const pos = screenToCanvas(ev);
@@ -2538,7 +2540,7 @@ function redraw() {
   edges.forEach(e => {
     // get actual arrow start/end
     const pts = getEdgePoints(e);
-	debugger;
+	//debugger;
     if (selected === e) {
       // highlighted selected arrow
       drawArrow(e.from, e.to, "red", 3);
