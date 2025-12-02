@@ -963,6 +963,7 @@ let edges = []; // { from: shapeObject, to: shapeObject }
 let pendingConnection = null; // when first shape selected
 let justCreatedShape = null; // for move shape in the first attempt
 let shapeIsMoving = false;
+let isEdgeClicked = false;
 
 // collapse/expand behavior
 const infoHeader = document.getElementById("infoHeader");
@@ -1137,6 +1138,7 @@ class Shape {
     ctx.lineWidth = 2;
 	
 	for (const e of edges) {
+	debugger;
         if (selected === e) {
             drawArrow(e.from, e.to, "red", 3);
         } else {
@@ -1701,8 +1703,13 @@ canvas.addEventListener('pointerdown', (ev) => {
   isResizing = false;
   shapeIsMoving = false;
 
+  // If we are editing text, finish it when the user clicks the canvas
+  if (editingShape) {
+    finishInlineEdit();
+  }
+  
   // -----------------------------
-  // 1. HANDLE RESIZE HANDLES
+  // HANDLE RESIZE HANDLES
   // -----------------------------
   // check if click hits a resize handle -> start resizing
   if (selected) {
@@ -1717,14 +1724,15 @@ canvas.addEventListener('pointerdown', (ev) => {
   }
   
   // -----------------------------
-  // 2. HIT TEST SHAPES
+  // HIT TEST SHAPES
   // -----------------------------
   // check if click hits a shape → select + drag
   selected = null;
+  let hit = null;
   
   for (let i = shapes.length - 1; i >= 0; i--) {
     if (shapes[i].contains(pos.x, pos.y)) {
-      const hit = shapes[i];
+      hit = shapes[i];
 	  selected = hit;
 	  //selected = shapes[i];
 	  
@@ -1776,16 +1784,22 @@ canvas.addEventListener('pointerdown', (ev) => {
       return;
     }
   }
-  
-  
-    // --- EDGE HIT-TEST: if user clicked an edge, select it and open panel ---
+debugger;
+  // -----------------------------
+  // HIT EDGE
+  // -----------------------------
+  // if user clicked an edge, select it and open panel
   for (let i = edges.length - 1; i >= 0; i--) {
-    const e = edges[i];
-    const pts = getEdgePoints(e); // { x1,y1,x2,y2 }
+
+	hit = edges[i];
+    //const e = edges[i];
+    const pts = getEdgePoints(hit); // { x1,y1,x2,y2 }
 
     if (isPointNearLine(pos.x, pos.y, pts.x1, pts.y1, pts.x2, pts.y2, 8)) {
       // prevent shape creation
-      selected = e;
+      selected = hit;
+	  //selected = e;
+	  isEdgeClicked = true;
       // open panel like shapes
       //openPanelForEdge(e);
       redraw();
@@ -1797,7 +1811,7 @@ canvas.addEventListener('pointerdown', (ev) => {
   pendingConnection = null;
 
   // -----------------------------
-  // 3. CREATE NEW SHAPE
+  // CREATE NEW SHAPE
   // -----------------------------
   // if click did NOT hit any shape → create a new shape (circle by default) instantly
   if (!selected) {
@@ -1953,7 +1967,7 @@ canvas.addEventListener('pointermove', (ev) => {
 
 // when mouse is up
 canvas.addEventListener('pointerup', (ev) => {
-  //debugger;
+debugger;
   ev.preventDefault();
   canvas.releasePointerCapture(ev.pointerId);
   const pos = screenToCanvas(ev);
@@ -1996,7 +2010,7 @@ canvas.addEventListener('pointerup', (ev) => {
 
   isDrawing = false;
   pendingConnection = null;
-  redraw();
+  //redraw();
 });
 
 canvas.addEventListener('pointercancel', (ev) => {
@@ -2032,15 +2046,23 @@ document.querySelector("#textPosition").addEventListener("change", (e) => {
 
 // when press delete key to delete a shape
 document.addEventListener('keydown', (e) => {
+
   if (e.key === 'Delete' && selected) {
+  
     shapes = shapes.filter(s => s !== selected);
-    selected = null; closePanel(); redraw();
+	
+	edges = edges.filter(s => s !== selected);
+	
+    selected = null;
+	
+	closePanel();
+	redraw();
   }
 });
 
 // deselect on canvas click when clicking empty area (and close panel)
 // or when ending drawing a shape
-canvas.addEventListener('click', (ev) => {
+/*canvas.addEventListener('click', (ev) => {
   const pos = screenToCanvas(ev);
   let hit = false;
   
@@ -2049,14 +2071,20 @@ canvas.addEventListener('click', (ev) => {
     finishInlineEdit();
   }
 	
-  for (let i = shapes.length - 1; i >= 0; i--) { if (shapes[i].contains(pos.x,pos.y)) { hit = true; break; } }
+  for (let i = shapes.length - 1; i >= 0; i--) {
+	if (shapes[i].contains(pos.x,pos.y)) {
+	  hit = true;
+	  break;
+    }
+  }
+  
   if (!hit) { 
-    selected = null;
+    //selected = null;
 	//closePanel();
 	redraw();
   }
 });
-
+*/
 // ESC to cancel editing
 document.addEventListener("keydown", (e) => {
 
@@ -2345,7 +2373,7 @@ function redraw() {
   edges.forEach(e => {
     // get actual arrow start/end
     const pts = getEdgePoints(e);
-
+	debugger;
     if (selected === e) {
       // highlighted selected arrow
       drawArrow(e.from, e.to, "red", 3);
