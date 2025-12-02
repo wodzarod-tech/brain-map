@@ -685,12 +685,12 @@
 		</div>
 
 		<div class="row">
-		  <label>Text color</label>
+		  <label>Color</label>
 		  <input id="panelTextColor" type="color" value="#000000">
 		</div>
 
 		<div class="row">
-		  <label>Text Position:</label>
+		  <label>Position:</label>
 		  <select id="textPosition">
 			<option value="center">Center</option>
 			<option value="top">Top</option>
@@ -699,6 +699,34 @@
 			<option value="right">Right</option>
 		  </select>
 		</div>
+		
+		<div class="row">
+			<label class="label-line">Edge/Arrow</label>
+		</div>
+		
+		<div class="row">
+		  <label>Color</label>
+		  <input id="propArrowColor" type="color" value="#000000">
+		</div>
+		
+		<div class="row">
+		  <label>Type</label>
+		  <select id="propArrowType">
+	   	    <option value="none">Solid</option>
+			<option value="solid">Dashed</option>
+			<option value="bold">Bold</option>
+		  </select>
+		</div>
+		
+		<div class="row">
+		  <label>Arrowhead</label>
+		  <select id="propArrowhead">
+	   	    <option value="none">Trianle</option>
+			<option value="solid">Diamond</option>
+			<option value="bold">None</option>
+		  </select>
+		</div>
+		
 	</div>
 
 	<!-- Tab Functions -->
@@ -922,6 +950,11 @@ const propH = document.getElementById('propH');
 //const propApply = document.getElementById('propApply');
 //const propReset = document.getElementById('propReset');
 
+// properties for edge:
+const propArrowColor = document.getElementById('propArrowColor');
+const propArrowType = document.getElementById('propArrowType');
+const propArrowhead = document.getElementById('propArrowhead');
+
 const panelText = document.getElementById('panelText');
 const panelTextSize = document.getElementById('panelTextSize');
 const panelTextColor = document.getElementById('panelTextColor');
@@ -1068,6 +1101,12 @@ class Shape {
       thickness: opts.thickness || 2,
       opacity: typeof opts.opacity === 'number' ? opts.opacity : 1
     };
+	
+	this.arrow = {
+      color: "#000000",
+      lineType: "solid",   // or dashed / bold
+      head: "none"         // or triangle / diamond
+    }
 
     // Text properties
     this.text = opts.text || "";
@@ -1364,9 +1403,43 @@ function syncPanelToShape() {
   panelText.value = selected.text || "";
   panelTextSize.value = selected.textSize || 16;
   panelTextColor.value = selected.textColor || "#000000";
+  
+  // edge fields
+  // ---------------------------
+  // EDGE / ARROW: ensure object
+  // ---------------------------
+  // This both creates the object on the selected shape (if missing)
+  // and returns a local reference so 'edge' is always defined.
+  debugger;
+  if (!selected.arrow || typeof selected.arrow !== 'object') {
+    // initialize with sensible defaults
+    selected.arrow = {
+      color: "#000000",
+      lineType: "solid", // solid | dashed | bold
+      head: "none"       // triangle | diamond | none
+    };
+  }
+  const edge = selected.arrow;
+
+  // Sync panel controls with edge values (use defaults if needed)
+  propArrowColor.value = edge.color || "#000000";
+  propArrowType.value  = edge.lineType || "solid";
+  propArrowhead.value  = edge.head || "none";
+}
+
+// Ensure arrow object exists on any selected shape
+function ensureArrowObject() {
+  if (!selected.arrow) {
+    selected.arrow = {
+      color: "#000000",
+      lineType: "solid",
+      head: "none"
+    };
+  }
 }
 
 // apply shape properties
+/*
 function applyPanelToShape(live = true) {
   if (!selected) return;
   selected.opts.fill = propFill.value;
@@ -1392,9 +1465,15 @@ function applyPanelToShape(live = true) {
   selected.text = panelText.value;
   selected.textSize = +panelTextSize.value;
   selected.textColor = panelTextColor.value;
-
+  
+  // edge
+  selected.opts.fill = propArrowColor.value;
+  selected.opts.type = propArrowType.value;
+  selected.opts.head = propArrowhead.value;
+  
   if (live) redraw();
 }
+*/
 
 // for switching tabs
 document.querySelectorAll("#panelTabs .tab").forEach(btn => {
@@ -1596,7 +1675,7 @@ document.getElementById("exportPngBtn").addEventListener("click", () => {
   }, 'image/png');
 });
 
-// live updates from panel
+// live updates for shape from panel
 propFill.addEventListener('input', (e) => { 
   if (!selected) return;
 
@@ -1615,6 +1694,18 @@ propFill.addEventListener('input', (e) => {
 	redraw();
   }
   */
+});
+
+// live updates for edge from panel
+propArrowColor.addEventListener('input', (e) => { 
+
+debugger;
+  if (!selected) return;
+
+  ensureArrowObject();
+  selected.arrow.color = e.target.value;
+
+  redraw();
 });
 
 // auto-darken border for shape: small color-darkening helper
@@ -1669,9 +1760,49 @@ function darkenColor(hex, percent = 20) {
       Math.round(b*255).toString(16).padStart(2,"0");
 }
 
-propBorder.addEventListener('change', () => { if(selected){ selected.opts.border = propBorder.value; redraw(); }});
-propThickness.addEventListener('input', () => { if(selected){ selected.opts.thickness = +propThickness.value; redraw(); }});
-propOpacity.addEventListener('input', () => { if(selected){ selected.opts.opacity = +propOpacity.value; propOpacityVal.innerText = (+propOpacity.value).toFixed(2); redraw(); }});
+// border for shape
+propBorder.addEventListener('change', () => {
+  if(selected){
+    selected.opts.border = propBorder.value;
+	redraw();
+  }
+});
+
+
+// arrow type for edge
+propArrowType.addEventListener('change', (e) => { 
+  if (!selected) return;
+
+  ensureArrowObject();
+  selected.arrow.lineType = e.target.value;  // solid, dashed, bold
+
+  redraw();
+});
+
+// arrowhead type
+propArrowhead.addEventListener('change', (e) => { 
+  if (!selected) return;
+
+  ensureArrowObject();
+  selected.arrow.head = e.target.value;  // triangle, diamond, none
+
+  redraw();
+});
+
+propThickness.addEventListener('input', () => { 
+  if(selected){
+    selected.opts.thickness = +propThickness.value;
+	redraw();
+  }
+});
+
+propOpacity.addEventListener('input', () => {
+  if(selected){
+    selected.opts.opacity = +propOpacity.value;
+	propOpacityVal.innerText = (+propOpacity.value).toFixed(2);
+	redraw();
+  }
+});
 
 // rounded corners
 propRounded.addEventListener('change', () => { 
@@ -1681,6 +1812,22 @@ propRounded.addEventListener('change', () => {
 			selected.radius = Math.max(0, Math.min(Math.abs(selected.w), Math.abs(selected.h)) * 0.1); 
 			redraw(); 
 	}
+});
+
+// edge type
+propArrowType.addEventListener('change', () => {
+  if(selected){
+    selected.opts.type = propArrowType.value;
+	redraw();
+  }
+});
+
+// edge arrowhead
+propArrowhead.addEventListener('change', () => {
+  if(selected){
+    selected.opts.type = propArrowhead.value;
+	redraw();
+  }
 });
 
 [propX, propY].forEach(inp => inp.addEventListener('input', () => { if(selected){ selected.x = +propX.value; selected.y = +propY.value; redraw(); }}));
@@ -1707,7 +1854,7 @@ canvas.addEventListener('pointerdown', (ev) => {
   if (editingShape) {
     finishInlineEdit();
   }
-  debugger;
+
   // -----------------------------
   // HANDLE RESIZE HANDLES
   // -----------------------------
@@ -2102,9 +2249,12 @@ document.addEventListener('keydown', (e) => {
 */
 // ESC to cancel editing
 document.addEventListener("keydown", (e) => {
-
+	
+	pendingConnection = null;
+		
 	// when right-clicking outside the canvas, close editor
 	document.addEventListener("contextmenu", (ev) => {
+		
 	    if (!editingShape) return; // no editor open -> do nothing
 
 		// clicked inside the text editor → keep editing
