@@ -1707,12 +1707,13 @@ canvas.addEventListener('pointerdown', (ev) => {
   if (editingShape) {
     finishInlineEdit();
   }
-  
+  debugger;
   // -----------------------------
   // HANDLE RESIZE HANDLES
   // -----------------------------
   // check if click hits a resize handle -> start resizing
-  if (selected) {
+  if (selected && !isEdgeClicked) {
+	isEdgeClicked = false;
     const hn = selected.handleAt(pos.x, pos.y);
     if (hn) {
       activeHandle = hn;
@@ -1724,7 +1725,7 @@ canvas.addEventListener('pointerdown', (ev) => {
   }
   
   // -----------------------------
-  // HIT TEST SHAPES
+  // HIT SHAPES
   // -----------------------------
   // check if click hits a shape → select + drag
   selected = null;
@@ -1734,6 +1735,7 @@ canvas.addEventListener('pointerdown', (ev) => {
     if (shapes[i].contains(pos.x, pos.y)) {
       hit = shapes[i];
 	  selected = hit;
+	  isEdgeClicked = false;
 	  //selected = shapes[i];
 	  
 	  // ----------------------------------------------------------
@@ -1815,6 +1817,8 @@ debugger;
   // -----------------------------
   // if click did NOT hit any shape → create a new shape (circle by default) instantly
   if (!selected) {
+	isEdgeClicked = false;
+	
     // snap-to-grid
     let x = pos.x, y = pos.y;
     
@@ -1891,37 +1895,6 @@ debugger;
 canvas.addEventListener('pointermove', (ev) => {
   const pos = screenToCanvas(ev);
   
-  // for resizing
-  if (isResizing && selected && activeHandle) {
-    resizeShape(selected, activeHandle, pos.x, pos.y);
-    syncPanelToShape();
-    redraw();
-    return;
-  }
-
-  // for dragging
-  if (isDragging && selected) {
-    shapeIsMoving = true;
-	
-	pendingConnection = null; // cancel connection mode with arrow after moving a shape
-	
-    let newX = pos.x - dragOffsetX;
-    let newY = pos.y - dragOffsetY;
-
-    // snap-to-grid
-    if (showGrid) {
-      newX = snapToGrid(newX);
-      newY = snapToGrid(newY);
-    }
-
-    selected.x = newX;
-    selected.y = newY;
-  
-    syncPanelToShape();
-    redraw();
-    return;
-  }
-
   // for drawing
   if (isDrawing) {
 	// drawing a rectangle
@@ -1952,17 +1925,59 @@ canvas.addEventListener('pointermove', (ev) => {
     return;
   }
 
-  // update cursor
-  let cursor = 'crosshair';
-  if (selected) {
-    if (selected.handleAt(pos.x, pos.y)) cursor = 'nwse-resize';
-    else if (selected.contains(pos.x,pos.y)) cursor = 'grab';
-  } else {
-    for (let i = shapes.length - 1; i >= 0; i--) {
-      if (shapes[i].contains(pos.x,pos.y)) { cursor = 'pointer'; break; }
+  // for dragging
+  if (isDragging && selected) {
+    shapeIsMoving = true;
+	
+	pendingConnection = null; // cancel connection mode with arrow after moving a shape
+	
+    let newX = pos.x - dragOffsetX;
+    let newY = pos.y - dragOffsetY;
+
+    // snap-to-grid
+    if (showGrid) {
+      newX = snapToGrid(newX);
+      newY = snapToGrid(newY);
     }
+
+    selected.x = newX;
+    selected.y = newY;
+  
+    syncPanelToShape();
+    redraw();
+    return;
   }
-  canvas.style.cursor = cursor;
+
+  // for resizing
+  if (isResizing && selected && activeHandle) {
+    resizeShape(selected, activeHandle, pos.x, pos.y);
+    syncPanelToShape();
+    redraw();
+    return;
+  }
+
+debugger;
+  if(isDrawing || isResizing || isDragging) {
+	  // update cursor
+	  let cursor = 'crosshair'; // for isDrawing
+	  
+	  if (selected) { // is shape is selected
+	  
+		if (selected.handleAt(pos.x, pos.y))
+		  cursor = 'nwse-resize'; // for resizing
+		else if (selected.contains(pos.x,pos.y))
+		  cursor = 'grab'; // for dragging, cursor over the body of the selected shape
+	  } else {
+		for (let i = shapes.length - 1; i >= 0; i--) {
+		  if (shapes[i].contains(pos.x,pos.y)) {
+			cursor = 'pointer';
+			break;
+		  }
+		}
+	  }
+  
+    canvas.style.cursor = cursor;
+  }
 });
 
 // when mouse is up
