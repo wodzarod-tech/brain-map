@@ -836,13 +836,21 @@
   </div>
 
 <script>
+
+/* -------------------------
+   Helper & Utility Functions
+   ------------------------- */
+const deepClone = v => JSON.parse(JSON.stringify(v));
+const $ = id => document.getElementById(id);
+
 /* -------------------- Setup & State -------------------- */
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 const toolbar = document.getElementById('toolbar');
 const shapeType = document.getElementById('shapeType');
-
+const undoBtn = $('undoBtn'); // use const $ = id => document.getElementById(id);
+const redoBtn = $('redoBtn'); // use const $ = id => document.getElementById(id);
 const clearBtn = document.getElementById('clearBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 
@@ -923,6 +931,19 @@ const devicePixelRatioSafe = () => window.devicePixelRatio || 1;
 // expand panel
 let panelExpanded = false;
 
+/* -------------------------
+   State
+   ------------------------- */
+let history = [];
+let redoStack = [];
+const HISTORY_LIMIT = 200;
+
+/* -------------------------
+   Undo/Redo & shortcuts
+   ------------------------- */
+undoBtn.addEventListener('click', undo);
+redoBtn.addEventListener('click', redo);
+
 /* -------------------- Canvas size -------------------- */
 
 // Call once on page load
@@ -975,8 +996,12 @@ document.getElementById("toggleGridBtn").addEventListener("click", () => {
   redraw();
 });
 
+/* -------------------------
+   Initialization
+   ------------------------- */
 // initial redraw
 redraw();
+pushHistory();
 
 /* -------------------- Shape Class -------------------- */
 /* Edge class */
@@ -1843,6 +1868,7 @@ canvas.addEventListener('pointerdown', (ev) => {
 		  text: "Text"
 		});
         
+		pushHistory();
 		edges.push(newEdge);
 
         pendingConnection = null;
@@ -1925,6 +1951,7 @@ canvas.addEventListener('pointerdown', (ev) => {
 		text: "Text"
       });
 	  
+	  pushHistory();
 	  shapes.push(newShapeText);
       justCreatedShape = newShapeText; // for move shape in the first attempt
       selected = null; // do not auto-select (resizing) the new shape
@@ -2143,10 +2170,41 @@ document.querySelector("#textPosition").addEventListener("change", (e) => {
   redraw();
 });
 
-// when press delete key to delete a shape
+// when press some key
 document.addEventListener('keydown', (e) => {
 
-  if (e.key === 'Delete' && selected) {
+  pendingConnection = null;
+		
+  // when right-clicking outside the canvas, close editor
+  document.addEventListener("contextmenu", (ev) => {
+		
+	    if (!editingShape) return; // no editor open -> do nothing
+
+		// clicked inside the text editor → keep editing
+		if (textEditor.contains(ev.target)) return;
+			
+		// clicked on canvas → canvas handler above handles it
+		if (ev.target === canvas) return;
+			
+	    // otherwise right-click outside → close editor
+		ev.preventDefault();
+		finishInlineEdit();
+  });
+	
+  if(e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 's'){
+    e.preventDefault();
+    //saveAllBtn.click();
+  } else if(e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'o'){
+    e.preventDefault();
+    //loadGraphBtn.click();
+  } else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){
+    e.preventDefault();
+	
+    if(e.shiftKey)
+	  redo();
+	else
+	  undo();
+  } else if (e.key === 'Delete' && selected) { 
   
     shapes = shapes.filter(s => s !== selected);
 	
@@ -2155,8 +2213,14 @@ document.addEventListener('keydown', (e) => {
     selected = null;
 	
 	closePanelUI();
-	//closePanel();
 	redraw();
+  } else if(e.key === 'Escape') { // ESC to cancel editing
+  	// Save changes when user leaves input or presses Enter
+    finishInlineEdit();
+		
+	closePanelUI();
+	selected = null;
+	redraw(); 
   }
 });
 
@@ -2185,37 +2249,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 */
-// ESC to cancel editing
-document.addEventListener("keydown", (e) => {
-	
-	pendingConnection = null;
-		
-	// when right-clicking outside the canvas, close editor
-	document.addEventListener("contextmenu", (ev) => {
-		
-	    if (!editingShape) return; // no editor open -> do nothing
-
-		// clicked inside the text editor → keep editing
-		if (textEditor.contains(ev.target)) return;
-			
-		// clicked on canvas → canvas handler above handles it
-		if (ev.target === canvas) return;
-			
-	    // otherwise right-click outside → close editor
-		ev.preventDefault();
-		finishInlineEdit();
-	});
-	
-	// Save changes when user leaves input or presses Enter
-    if (e.key === "Escape") {
-        finishInlineEdit();
-		
-		closePanelUI();
-		//closePanel();
-		selected = null;
-		redraw(); 
-    }
-});
 
 // when double-left click
 canvas.addEventListener('dblclick', (ev) => {
@@ -2725,6 +2758,39 @@ function openPanelForEdge(edge) {
 
   // update UI to reflect an "edge" selection if desired (optional)
   // e.g. propType.value = 'edge';
+}
+
+/* -------------------------
+   History (undo/redo)
+   ------------------------- */
+function pushHistory(){
+  history.push({ shapes: deepClone(shapes), edges: deepClone(edges) });
+  
+  if(history.length > HISTORY_LIMIT)
+    history.shift();
+  
+  redoStack = [];
+}
+
+function undo(){
+debugger;
+  if(history.length === 0)
+    return;
+  
+  redoStack.push({ shapes: deepClone(shapes), edges: deepClone(edges) });
+  const prev = history.pop();
+  shapes = prev.shapes;
+  edges = prev.edges;
+}
+
+function redo(){
+  if(redoStack.length === 0)
+    return;
+  
+  history.push({ shapes: deepClone(shapes), edges: deepClone(edges) });
+  const next = redoStack.pop();
+  shapes = next.shapes;
+  edges = next.edges;
 }
 
 /* -------------------- Modal API Rest -------------------- */
