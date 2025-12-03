@@ -2192,12 +2192,6 @@ document.querySelector("#textPosition").addEventListener("change", (e) => {
 });
 
 // when press some key
-// it can be replaced for:
-/*window.addEventListener("keydown", (e) => {
-  if (e.ctrlKey && e.key === "z") undo();
-  if (e.ctrlKey && e.key === "y") redo();
-});
-*/
 document.addEventListener('keydown', (e) => {
 
   pendingConnection = null;
@@ -2224,11 +2218,13 @@ document.addEventListener('keydown', (e) => {
   } else if(e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'o'){
     e.preventDefault();
     //loadGraphBtn.click();
-  } else if(e.ctrlKey && e.key === "z"){
+  } else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){
     e.preventDefault();
-	undo();
-  } else if(e.ctrlKey && e.key === "y"){
+	
+    if(e.shiftKey)
 	  redo();
+	else
+	  undo();
   } else if (e.key === 'Delete' && selected) { 
   
     shapes = shapes.filter(s => s !== selected);
@@ -2791,6 +2787,13 @@ function openPanelForEdge(edge) {
 /* -------------------------
    History (undo/redo)
    ------------------------- */
+function reviveShape(obj) {
+  return new Shape(obj);}
+
+function reviveEdge(obj) {
+  return new Edge(obj.from, obj.to, obj.opts || obj.arrow || {});
+}
+
 function pushHistory(){
 
   // Avoid recording identical states (common during dragging)
@@ -2813,8 +2816,7 @@ function pushHistory(){
 }
 
 function undo(){
-  if (history.length === 0)
-    return; // don't undo initial state
+  if (history.length <= 1) return; // don't undo initial state
   
   // Move current → redo stack
   redoStack.push({
@@ -2828,13 +2830,16 @@ function undo(){
   edges  = prev.edges.map(e => reviveEdge(e));
 
   redraw();
+  /*
+  const prev = history.pop();
+  shapes = prev.shapes;
+  edges = prev.edges;
+  */
 }
 
 function redo(){
-  if (redoStack.length === 0)
-    return;
+  if (redoStack.length === 0) return;
 
-  // Take next state
   const next = redoStack.pop();
 
   // Save current before moving forward
@@ -2843,19 +2848,24 @@ function redo(){
     edges: deepClone(next.edges)
   });
 
-  // Restore shapes & edges and revive classes
-  shapes = next.shapes.map(s => reviveShape(s));
-  edges  = next.edges.map(e => reviveEdge(e));
+  shapes = deepClone(next.shapes);
+  edges = deepClone(next.edges);
 
   redraw();
-}
-
-function reviveShape(obj) {
-  return new Shape(obj.type, obj.x, obj.y, obj.w, obj.h, obj.opts);
-}
-
-function reviveEdge(obj) {
-  return new Edge(obj.from, obj.to, obj.opts || {});
+  
+/*
+  if(redoStack.length === 0)
+    return;
+  
+  history.push({
+    shapes: deepClone(shapes),
+    edges: deepClone(edges)
+  });
+  
+  const next = redoStack.pop();
+  shapes = next.shapes;
+  edges = next.edges;
+*/
 }
 
 /* -------------------- Modal API Rest -------------------- */
