@@ -885,6 +885,9 @@ const panelTextColor = document.getElementById('panelTextColor');
 
 const textEditor = document.getElementById("textEditor");
 
+const loadGraphInput = $('loadGraphInput');
+const saveAllBtn = $('saveAllBtn');
+
 // for Function tab
 const textList = document.getElementById("textList");
 const addTextboxBtn = document.getElementById("addTextboxBtn");
@@ -948,6 +951,72 @@ const HISTORY_LIMIT = 200;
 undoBtn.addEventListener('click', undo);
 redoBtn.addEventListener('click', redo);
 
+/* -------------------------
+   Export / Import / Save
+   ------------------------- */
+saveAllBtn.addEventListener('click', () => {
+  const data = {
+  shapes: shapes.map(n => ({
+  	type:n.type,
+    x:n.x,
+	y:n.y,
+    w:n.w,
+	h:n.h,
+	border: n.opts.border,
+	fill: n.opts.fill,
+	thickness: n.opts.thickness,
+	opacity: n.opts.opacity,
+	color: n.opts.fill
+  })),
+  edges: edges.map(e => ({
+    from:e.from,
+	to:e.to,
+	color: e.opts.color,
+	type: e.opts.type,
+	head: e.opts.head,
+	text: e.opts.text
+  }))
+  };
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'export_data.json';
+  a.click();
+});
+/*
+loadGraphBtn.addEventListener('click', () => loadGraphInput.click());
+loadGraphInput.addEventListener('change', (ev) => {
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.nodes || !data.edges) throw new Error('Invalid format');
+      pushHistory();
+      nodes = data.nodes.map(n => ({
+        x: n.x, y: n.y,
+        color: n.color || '#3498db',
+        shape: n.shape || 'circle',
+        title: n.title || '',
+        titlePos: n.titlePos || 'above',
+        comment: n.comment || '',
+        selectedEdgeType: n.selectedEdgeType || 'solid',
+        selectedArrowhead: n.selectedArrowhead || 'triangle',
+        selected: !!n.selected
+      }));
+      edges = data.edges.map(e => ({ from: e.from, to: e.to, type: e.type || 'solid', arrowhead: e.arrowhead || 'triangle' }));
+      hideMenu();
+      alert('Graph loaded successfully');
+    }catch(err){
+      alert('Failed to load graph: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  loadGraphInput.value = '';
+});
+*/
 /* -------------------- Canvas size -------------------- */
 
 // Call once on page load
