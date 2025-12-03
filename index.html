@@ -1299,47 +1299,50 @@ function openPanelForShape(shape) {
 
 // syncing the Panel
 function syncPanelToShape() {
-  debugger;
+
   if (!selected) return;
   
-  // ---------------------------
-  // FOR SHAPE
-  // ---------------------------
+  if(selected.constructor.name === 'Shape') {
+	  // ---------------------------
+	  // FOR SHAPE
+	  // ---------------------------
 
-  propType.value = selected.type;
-  propFill.value = selected.opts.fill;
-  propBorder.value = selected.opts.border;
-  propThickness.value = selected.opts.thickness;
-  propOpacity.value = selected.opts.opacity;
-  propOpacityVal.innerText = selected.opts.opacity.toFixed(2);
-  propRounded.checked = !!selected.rounded;
-  propX.value = Math.round(selected.x);
-  propY.value = Math.round(selected.y);
+	  propType.value = selected.type;
+	  propFill.value = selected.opts.fill;
+	  propBorder.value = selected.opts.border;
+	  propThickness.value = selected.opts.thickness;
+	  propOpacity.value = selected.opts.opacity;
+	  propOpacityVal.innerText = selected.opts.opacity.toFixed(2);
+	  propRounded.checked = !!selected.rounded;
+	  propX.value = Math.round(selected.x);
+	  propY.value = Math.round(selected.y);
 
-  // for rectangle
-  if (selected.type === 'rectangle') {
-    propW.value = Math.round(selected.w);
-    propH.value = Math.round(selected.h);
-    document.getElementById('sizeRow').style.display = '';
-    document.getElementById('sizeRowH').style.display = '';
-  } else { // for circle
-    const r = Math.round(Math.max(0, Math.sqrt(selected.w*selected.w + selected.h*selected.h)));
-    propW.value = r;
-    propH.value = r;
-    document.getElementById('sizeRow').style.display = '';
-    document.getElementById('sizeRowH').style.display = '';
+	  // for rectangle
+	  if (selected.type === 'rectangle') {
+		propW.value = Math.round(selected.w);
+		propH.value = Math.round(selected.h);
+		document.getElementById('sizeRow').style.display = '';
+		document.getElementById('sizeRowH').style.display = '';
+	  } else { // for circle
+		const r = Math.round(Math.max(0, Math.sqrt(selected.w*selected.w + selected.h*selected.h)));
+		propW.value = r;
+		propH.value = r;
+		document.getElementById('sizeRow').style.display = '';
+		document.getElementById('sizeRowH').style.display = '';
+	  }
+
+	  // text fields
+	  panelText.value = selected.text || "";
+	  panelTextSize.value = selected.textSize || 16;
+	  panelTextColor.value = selected.textColor || "#000000";
   }
-
-  // text fields
-  panelText.value = selected.text || "";
-  panelTextSize.value = selected.textSize || 16;
-  panelTextColor.value = selected.textColor || "#000000";
   
-  // ---------------------------
-  // FOR EDGE
-  // ---------------------------
-  propArrowColor.value = selected.opts.color;
-
+  if(selected.constructor.name === 'Edge') {
+	  // ---------------------------
+	  // FOR EDGE
+	  // ---------------------------
+	  propArrowColor.value = selected.opts.color;
+  }
 
   /*
   // edge fields
@@ -2058,7 +2061,7 @@ canvas.addEventListener('pointermove', (ev) => {
 
 // when mouse is up
 canvas.addEventListener('pointerup', (ev) => {
-//debugger;
+debugger;
   ev.preventDefault();
   canvas.releasePointerCapture(ev.pointerId);
   const pos = screenToCanvas(ev);
@@ -2066,7 +2069,10 @@ canvas.addEventListener('pointerup', (ev) => {
   // If user clicked empty space → cancel pending connection
   if (!selected) {
     pendingConnection = null;
+	return;
   }
+
+  syncPanelToShape();
 
   // for resizing
   if (isResizing) {
@@ -2101,7 +2107,7 @@ canvas.addEventListener('pointerup', (ev) => {
 
   isDrawing = false;
   pendingConnection = null;
-  //redraw();
+  redraw();
 });
 
 canvas.addEventListener('pointercancel', (ev) => {
