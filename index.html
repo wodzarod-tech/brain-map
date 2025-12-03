@@ -21,51 +21,22 @@
     height:var(--toolbar-h);
     display:flex;
 	gap: 0; 
-    /*gap:10px;*/
     align-items:center;
-    /*padding:8px;*/
-    /*background:#f4f4f4;*/
-	/*border-bottom: 1px solid #ddd;*/
     box-sizing:border-box;
 	justify-content: space-between;
   }
-  
-  /*#toolbar > * { font-size:14px; }*/
-  
+    
   #toolbar label {
     white-space: nowrap;
   }
 
-  /*
-  .left-tools {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  */
-  /*
-  .right-tools {
-    margin-left: auto;         /* pushes to the right */
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  */
   canvas {
     display:block;
 	width:100vw;
 	height:calc(100vh - var(--toolbar-h));
 	background:#fff; cursor:crosshair;
   }
-/*
-  button {
-	padding:6px 10px;
-	border-radius:6px;
-	border:1px solid #bbb;
-	background:#fff;
-	cursor:pointer;
-  }
-*/
+
   input[type="number"] { width:80px; }
   
   label {
@@ -83,15 +54,11 @@
     height: 100vh;
     background: #ffffff;
 	border-left: 1px solid #ccc;
-    /*border-left: 1px solid #e3e3e3;*/
     box-shadow: -4px 0 16px rgba(0,0,0,0.15);
-	/*box-shadow: -18px 0 40px rgba(10,10,10,0.06);*/
     transform: translateX(100%); /* animation */
     transition: width 0.25s ease;
-	/*transition: transform 280ms cubic-bezier(.2,.8,.2,1);*/ /* animation */
     z-index: 2000;
-	/*z-index: 120;*/
-    padding: 10px;/*16px;*/
+    padding: 10px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -103,9 +70,9 @@
   /* Visible handle at the right edge to toggle panel open/closed */
   #panelHandle {
     position: fixed;
-    right: 0;                 /* sit flush on the right edge */
-    top: 40%;                 /* adjust vertical position as you like */
-    transform: translateX(50%); /* slightly outside so the arrow points inward */
+    right: 0;
+    top: 40%;
+    transform: translateX(50%);
     z-index: 3001;
     width: 28px;
     height: 48px;
@@ -121,15 +88,9 @@
     font-weight: 700;
   }
 
-  /* when panel is open, hide the handle if you prefer */
-  /*#panel.open + #panelHandle,
-  #panelHandle.hidden {
-    display: none;
-  }*/
-
   /* Expand panel */
   #panel.expanded {
-    width: 600px; /* expanded size */
+    width: 600px;
   }
 
   /* Expand button */
@@ -137,7 +98,7 @@
     position: absolute;
     left: -24px;
     top: 12px;
-	z-index: 3000; /* ensure on top of everything */
+	z-index: 3000;
     width: 22px;
     height: 22px;
     border: none;
@@ -185,9 +146,7 @@
   }
   
   #panel input[type="text"], #panel input[type="number"] {
-    /*width: calc(100% - 120px);*/
     padding:6px 8px;
-    /*border:1px solid #ddd;*/
     border-radius:6px;
     font-size:13px;
   }
@@ -304,22 +263,12 @@
     width: 100%;
 	height: 80px;
 	padding: 6px;
-	/*border: 1px solid #ccc;*/
-	/*border-radius: 6px;*/
 	resize: vertical;
 	font-size: 13px;
 	box-sizing: border-box;
   }
 
-  /* delete textboxes */
-  .textbox-wrapper {
-    /*border: 1px solid #ccc;*/
-    /*border-radius: 6px;*/
-    /*padding: 6px;*/
-    /*margin-bottom: 8px;*/
-    /*background: #fafafa;*/
-  }
-  
+  /* delete textboxes */  
   .textbox-header {
     display: flex;
     justify-content: space-between;
@@ -370,7 +319,6 @@
 
   /* Function section / search button */
   .service-btn {
-    /*padding:18px 0;*/
     border-radius:10px;
     border:1px solid #ccc;
     background:#fafafa;
@@ -387,21 +335,9 @@
     width:35px;
 	height:35px;
   }
-  
-  /* Left tools */
-  /*
-  .left-tools {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-	margin-right: auto;   /* keeps them stuck to the left */
-  }
-  */
 
   #shapeType {
-    /*width: calc(100% - 120px);*/
     padding:6px 8px;
-    /*border:1px solid #ddd;*/
     border-radius:6px;
     font-size:13px;
   }
@@ -410,17 +346,10 @@
   .toolbar-icon-btn {
     border: none;
     background: none;
-    padding: 6px 10px;       /* small clickable area */
+    padding: 6px 10px;
     cursor: pointer;
-	/*border-radius: 6px;*/
-    /*display: inline-flex;*/
-    /*align-items: center;
-    justify-content: center;
-    width: 32px;       /* or whatever size you want */
-    height: 32px;
     font-size: 18px;
-    line-height: 1;
-    padding: 0;*/
+    padding: 0;
   }
 
   .toolbar-icon-btn:hover {
@@ -448,15 +377,9 @@
 	align-items: center;
 	gap: 10px;
 	background: #fff;
-	/*border: 1px solid #d0d0d0;*/
-	/*border-radius: 12px;*/
-	/*padding: 10px;*/
 	padding: 8px 12px;
 	width: 530px;
 	font-family: sans-serif;
-	/*max-width: 95%;
-	box-shadow: 0 10px 35px rgba(0,0,0,0.3);
-	animation: popup 0.15s ease-out;*/
   }
 
   @keyframes popup {
@@ -474,7 +397,6 @@
   .api-row {
     display: flex;
 	align-items: center;
-    /*gap: 10px;*/
     margin-bottom: 8px;
 	background: #fff;
 	border: 1px solid #d0d0d0;
@@ -490,7 +412,6 @@
 	font-size: 14px;
 	padding: 4px;
 	cursor: pointer;
-	/*width: 80px;*/
   }
   
   #apiMethod:focus {
@@ -502,8 +423,6 @@
 	border: none;
 	font-size: 14px;
 	padding: 4px;
-	/*width: 60%;
-    padding: 6px 8px;*/
   }
 
   #apiUrl:focus {
@@ -537,7 +456,6 @@
     width: 100%;
     background: #f4f4f4;
     padding: 8px;
-    /*max-height: 500px;*/
     overflow: auto;
     border-radius: 6px;
   }
@@ -554,17 +472,13 @@
 				   border:1px solid #333; outline:none;">
   </textarea>
 
-  <!-- small always-visible handle to open/close the panel when closed -->
+  <!-- handle to open/close the panel -->
   <button id="panelHandle" title="Open panel">►</button>
 
-    <!--<button id="panelExpandBtn" class="panel-expand-btn">⮜</button>-->
-
-    <!--<button id="panelClose" title="Close panel">✕</button>-->
-  <!-- Slide-in Panel for Shape Properties -->
+  <!-- Panel for Shape Properties -->
   <div id="panel" aria-hidden="true">
 	<div id="toolbar" class="button-row">
 
-		<!--<label>Shape:-->
 		<label>
 		  <select id="shapeType">
 			<option value="circle">Circle</option>
@@ -594,8 +508,6 @@
 		<button id="deleteBtn" class="toolbar-icon-btn" style="display:none">Delete Selected</button>
 	</div>
 
-
-  
     <!-- Tabs Header -->
     <div id="panelTabs">
       <button class="tab active" data-tab="styleTab">Design</button>
@@ -896,7 +808,7 @@
 				  <option>PATCH</option>
 				</select>
 
-				<input id="apiUrl" type="text" placeholder="https://api.example.com/users" />
+				<input id="apiUrl" type="text" placeholder="https://api.example.com/users" value="https://restcountries.com/v3.1/all?fields=name,capital"/>
 				
 				<button id="apiSendBtn" title="Send">
 				  <span style="display:flex; align-items:center; gap:6px;">
@@ -936,8 +848,6 @@ const deleteBtn = document.getElementById('deleteBtn');
 
 const panel = document.getElementById('panel');
 const panelHandle = document.getElementById("panelHandle");
-//const panelExpandBtn = document.getElementById("panelExpandBtn");
-//const panelClose = document.getElementById('panelClose');
 const propType = document.getElementById('propType');
 const propFill = document.getElementById('propFill');
 const propBorder = document.getElementById('propBorder');
@@ -992,8 +902,6 @@ let editingShape = null;
 let showGrid = true; // grid enabled
 
 // connect nodes with edge
-//let connecting = false; 
-//let sourceNode = null; // the node where the user started dragging from
 let edges = []; // { from: shapeObject, to: shapeObject }
 let pendingConnection = null; // when first shape selected
 let justCreatedShape = null; // for move shape in the first attempt
@@ -1192,7 +1100,6 @@ class Shape {
 
   // draw a pixel at the center of a shape
   /*drawCenterPixel(ctx) {
-  debugger;
   let cx;
   let cy;
     if (this.type === "rectangle") {
@@ -1295,7 +1202,6 @@ function closePanelUI() {
   panel.classList.remove("open");
   panel.setAttribute("aria-hidden", "true");
   
-  // keep display set so CSS transition works; you can also set display none after transition if you want
   panelHandle.classList.remove("hidden"); // show handle when closed
 }
 
@@ -1321,39 +1227,6 @@ panelHandle.addEventListener("click", () => {
 	}
 });
 
-// Also let the close button close
-/*panelClose.addEventListener("click", () => {
-  closePanelUI();
-});*/
-
-//panelClose.addEventListener('click', closePanel);
-
-// Expand button toggles width (existing expand functionality)
-/*
-panelExpandBtn.addEventListener("click", () => {
-  panelExpanded = !panelExpanded;
-  if (panelExpanded) {
-    panel.classList.add("expanded");
-    panelExpandBtn.textContent = "⮞";
-  } else {
-    panel.classList.remove("expanded");
-    panelExpandBtn.textContent = "⮜";
-  }
-});
-*/
-// expand panel
-/*panelExpandBtn.addEventListener("click", () => {
-  panelExpanded = !panelExpanded;
-
-  if (panelExpanded) {
-    panel.classList.add("expanded");
-    panelExpandBtn.textContent = "⮞";   // arrow flips direction
-  } else {
-    panel.classList.remove("expanded");
-    panelExpandBtn.textContent = "⮜";
-  }
-});
-*/
 /*
 used when selecting a shape
 
@@ -1378,11 +1251,6 @@ function openPanelForShape(shape) {
   // ensure panel is visible (force reflow in odd cases)
   panel.style.display = 'flex';
 }
-/*
-function closePanel() {
-  panel.classList.remove('open');
-  panel.setAttribute('aria-hidden', 'true');
-}*/
 
 // syncing the Panel
 function syncPanelToShape() {
@@ -1423,7 +1291,6 @@ function syncPanelToShape() {
   // ---------------------------
   // This both creates the object on the selected shape (if missing)
   // and returns a local reference so 'edge' is always defined.
-  //debugger;
   if (!selected.arrow || typeof selected.arrow !== 'object') {
     // initialize with sensible defaults
     selected.arrow = {
@@ -1450,43 +1317,6 @@ function ensureArrowObject() {
     };
   }
 }
-
-// apply shape properties
-/*
-function applyPanelToShape(live = true) {
-  if (!selected) return;
-  selected.opts.fill = propFill.value;
-  selected.opts.border = propBorder.value;
-  selected.opts.thickness = +propThickness.value;
-  selected.opts.opacity = +propOpacity.value;
-
-  if (selected.type === 'rectangle') {
-    selected.rounded = propRounded.checked;
-    if (selected.rounded) selected.radius = Math.max(0, Math.min(Math.abs(+propW.value), Math.abs(+propH.value)) * 0.1);
-    selected.x = +propX.value;
-    selected.y = +propY.value;
-    selected.w = +propW.value;
-    selected.h = +propH.value;
-  } else {
-    const r = Math.max(0, +propW.value || +propH.value);
-    selected.w = r; selected.h = r;
-    selected.x = +propX.value;
-    selected.y = +propY.value;
-  }
-
-  // text
-  selected.text = panelText.value;
-  selected.textSize = +panelTextSize.value;
-  selected.textColor = panelTextColor.value;
-  
-  // edge
-  selected.opts.fill = propArrowColor.value;
-  selected.opts.type = propArrowType.value;
-  selected.opts.head = propArrowhead.value;
-  
-  if (live) redraw();
-}
-*/
 
 // for switching tabs
 document.querySelectorAll("#panelTabs .tab").forEach(btn => {
@@ -1701,12 +1531,6 @@ propFill.addEventListener('input', (e) => {
   }
 
   redraw();
-  /*
-  if(selected){
-    selected.opts.fill = propFill.value;
-	redraw();
-  }
-  */
 });
 
 // live updates for edge from panel
@@ -1843,9 +1667,45 @@ propArrowhead.addEventListener('change', () => {
   }
 });
 
-[propX, propY].forEach(inp => inp.addEventListener('input', () => { if(selected){ selected.x = +propX.value; selected.y = +propY.value; redraw(); }}));
-propW.addEventListener('input', () => { if(!selected) return; if(selected.type === 'rectangle'){ selected.w = +propW.value; if(selected.rounded) selected.radius = Math.max(0, Math.min(Math.abs(selected.w), Math.abs(selected.h)) * 0.1); } else { selected.w = +propW.value; selected.h = +propW.value; } redraw(); });
-propH.addEventListener('input', () => { if(!selected) return; if(selected.type === 'rectangle'){ selected.h = +propH.value; if(selected.rounded) selected.radius = Math.max(0, Math.min(Math.abs(selected.w), Math.abs(selected.h)) * 0.1); } else { const r = +propH.value; selected.w = r; selected.h = r; } redraw(); });
+[propX, propY].forEach(inp => inp.addEventListener('input', () => {
+  if(selected){
+    selected.x = +propX.value;
+	selected.y = +propY.value;
+	redraw();
+  }}
+));
+
+propW.addEventListener('input', () => {
+  if(!selected)
+    return;
+
+  if(selected.type === 'rectangle'){
+    selected.w = +propW.value;
+	
+	if(selected.rounded)
+	  selected.radius = Math.max(0, Math.min(Math.abs(selected.w), Math.abs(selected.h)) * 0.1);
+  } else {
+    selected.w = +propW.value;
+	selected.h = +propW.value;
+  }
+  redraw();
+});
+
+propH.addEventListener('input', () => {
+  if(!selected)
+    return;
+
+  if(selected.type === 'rectangle') {
+    selected.h = +propH.value;
+
+	if(selected.rounded)
+      selected.radius = Math.max(0, Math.min(Math.abs(selected.w), Math.abs(selected.h)) * 0.1);
+  } else {
+    const r = +propH.value; selected.w = r; selected.h = r;
+  }
+  
+  redraw();
+});
 
 //propApply.addEventListener('click', () => { applyPanelToShape(false); closePanel(); });
 //propReset.addEventListener('click', () => { syncPanelToShape(); });
@@ -1895,31 +1755,18 @@ canvas.addEventListener('pointerdown', (ev) => {
     if (shapes[i].contains(pos.x, pos.y)) {
       hit = shapes[i];
 	  selected = hit;
-	  isEdgeClicked = false;
-	  //selected = shapes[i];
-	  
-	  // ----------------------------------------------------------
-      // SPECIAL CASE: FIRST CLICK AFTER CREATED A SHAPE → MOVE IT
-      // ----------------------------------------------------------
-	  /*if (hit === justCreatedShape) {
-        selected = hit;
-        justCreatedShape = null;
-
-        isDragging = true;
-        dragOffsetX = pos.x - selected.x;
-        dragOffsetY = pos.y - selected.y;
-        redraw();
-        return;
-      }*/
+	  isEdgeClicked = false;	  
 	  
       // ----------------------------------------------------------
       // CONNECTION MODE
       // ----------------------------------------------------------
 	  // for connection shapes
 	  if (pendingConnection === null) {
+	  
         // first click → start connection
         pendingConnection = hit;
       } else if (pendingConnection && hit !== pendingConnection) {
+	  
         // second click → complete arrow
         edges.push({
           from: pendingConnection,
@@ -1946,7 +1793,7 @@ canvas.addEventListener('pointerdown', (ev) => {
       return;
     }
   }
-//debugger;
+
   // -----------------------------
   // HIT EDGE
   // -----------------------------
@@ -2116,7 +1963,7 @@ canvas.addEventListener('pointermove', (ev) => {
     return;
   }
 
-//debugger;
+  //debugger;
   if(isDrawing || isResizing || isDragging) {
 	  // update cursor
 	  let cursor = 'crosshair'; // for isDrawing
@@ -2295,35 +2142,6 @@ document.addEventListener("keydown", (e) => {
     }
 });
 
-// deselect when clicking outside panel will already close because canvas handles it
-// close panel on Esc
-/*
-document.addEventListener('keydown', (ev) => {
-
-	// when right-clicking outside the canvas, close editor
-	document.addEventListener("contextmenu", (e) => {
-		if (!editingShape) return;
-
-		// clicked inside the text editor → keep editing
-		if (textEditor.contains(e.target)) return;
-
-		// clicked on canvas → canvas handler above handles it
-		if (e.target === canvas) return;
-
-		// otherwise right-click outside → close editor
-		e.preventDefault();
-		finishInlineEdit();
-	});
-
-	// Save changes when user leaves input or presses Enter
-	if (ev.key === 'Escape') { 
-		closePanel();
-		selected = null;
-		redraw(); 
-	}
-});
-*/
-
 // when double-left click
 canvas.addEventListener('dblclick', (ev) => {
   ev.preventDefault();
@@ -2418,7 +2236,6 @@ function startInlineEdit(shape) {
     textEditor.style.width = shape.w + "px";
     textEditor.style.height = shape.h + "px";
 
-	//debugger;
 	const { cx, cy } = getCenter(shape);
 	//console.log("Center:", cx, cy);
 	//console.log("shape.x", shape.x);
@@ -2455,11 +2272,8 @@ function getCenter(shape) {
             cx: shape.x + shape.w / 2,
             cy: shape.y + shape.h / 2
         };
-    } else { 
-        // circle — your shape.x and shape.y ARE already the center
+    } else { // circle
         return {
-            //cx: this.x + this.w / 2,
-			//cy: this.y + this.h / 2
 			cx: shape.x,
             cy: shape.y
         };
@@ -2899,21 +2713,18 @@ document.getElementById("apiRestBtn").addEventListener("click", () => {
   panel.classList.add("expanded");
 
   document.getElementById("apiModalContent").style.display = "block";
-  
   //document.getElementById("apiModal").style.display = "flex";
 });
 
 // close modal
 document.getElementById("apiClose").addEventListener("click", () => {
   document.getElementById("apiModalContent").style.display = "none";
-  //document.getElementById("apiModal").style.display = "none";
 });
 
 // send API request
 document.getElementById("apiSendBtn").addEventListener("click", async () => {
   const method = document.getElementById("apiMethod").value;
-  //const url = document.getElementById("apiUrl").value;
-  const url = "https://restcountries.com/v3.1/all?fields=name,capital";
+  const url = document.getElementById("apiUrl").value;
   const body = document.getElementById("apiBody").value.trim();
   const resBox = document.getElementById("apiResponse");
 
