@@ -635,7 +635,7 @@
 		<div class="row">
 		  <label>Arrowhead</label>
 		  <select id="propArrowhead">
-	   	    <option value="none">Trianle</option>
+	   	    <option value="none">Triangle</option>
 			<option value="solid">Diamond</option>
 			<option value="bold">None</option>
 		  </select>
@@ -902,7 +902,7 @@ let editingShape = null;
 let showGrid = true; // grid enabled
 
 // connect nodes with edge
-let edges = []; // { from: shapeObject, to: shapeObject }
+let edges = []; // {from,to,type,head,title,color}
 let pendingConnection = null; // when first shape selected
 let justCreatedShape = null; // for move shape in the first attempt
 let shapeIsMoving = false;
@@ -979,6 +979,66 @@ document.getElementById("toggleGridBtn").addEventListener("click", () => {
 redraw();
 
 /* -------------------- Shape Class -------------------- */
+/* Edge class */
+class Edge {
+  constructor(from, to, opts = {}) {
+    this.from = from;
+    this.to = to;
+    this.opts = {
+   	  color: opts.color || '#ffffff',
+	  type: opts.type, // solid, dashed, bold 
+	  head: opts.head || 'none', // triangle, diamond, none
+	  text: opts.text 
+	}; 
+  }
+  
+  draw(ctx, highlight=false) {
+  
+    // get shape centers
+    const cx1 = this.from.type === "rectangle" ? this.from.x + this.from.w / 2 : this.from.x;
+    const cy1 = this.from.type === "rectangle" ? this.from.y + this.from.h / 2 : this.from.y;
+
+    const cx2 = this.to.type === "rectangle" ? this.to.x + this.to.w / 2 : this.to.x;
+    const cy2 = this.to.type === "rectangle" ? this.to.y + this.to.h / 2 : this.to.y;
+	
+	// border intersection points
+    const start = getBorderPoint(this.from, cx2, cy2);
+    const end = getBorderPoint(this.to, cx1, cy1);
+
+    // draw arrow line
+    const headLength = 12;
+    const angle = Math.atan2(end.y - start.y, end.x - start.x);
+
+    //if(highlight)
+    //	ctx.strokeStyle = "red";
+    //else
+	  ctx.strokeStyle = this.opts.color;
+	  
+    ctx.lineWidth = 2; //lineWidth;
+
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+
+    // arrowhead left
+    ctx.lineTo(
+        end.x - headLength * Math.cos(angle - Math.PI / 6),
+        end.y - headLength * Math.sin(angle - Math.PI / 6)
+    );
+
+    // move back to tip
+    ctx.moveTo(end.x, end.y);
+
+    // arrowhead right
+    ctx.lineTo(
+        end.x - headLength * Math.cos(angle + Math.PI / 6),
+        end.y - headLength * Math.sin(angle + Math.PI / 6)
+    );
+
+    ctx.stroke();
+  }
+}
+
 /*
 1. each shape stores:
 Type: "rectangle" or "circle"
@@ -1011,12 +1071,6 @@ class Shape {
       thickness: opts.thickness || 2,
       opacity: typeof opts.opacity === 'number' ? opts.opacity : 1
     };
-	
-	this.arrow = {
-      color: "#000000",
-      lineType: "solid",   // or dashed / bold
-      head: "none"         // or triangle / diamond
-    }
 
     // Text properties
     this.text = opts.text || "";
@@ -1085,15 +1139,6 @@ class Shape {
 	// draw edge without shadow
 	ctx.setLineDash([]); // avoid inheriting dashed from shape
     ctx.lineWidth = 2;
-	
-	for (const e of edges) {
-	//debugger;
-        if (selected === e) {
-            drawArrow(e.from, e.to, "red", 3);
-        } else {
-            drawArrow(e.from, e.to, "#000", 2);
-        }
-    }
 
     ctx.restore();
   }
@@ -1254,8 +1299,13 @@ function openPanelForShape(shape) {
 
 // syncing the Panel
 function syncPanelToShape() {
+  debugger;
   if (!selected) return;
   
+  // ---------------------------
+  // FOR SHAPE
+  // ---------------------------
+
   propType.value = selected.type;
   propFill.value = selected.opts.fill;
   propBorder.value = selected.opts.border;
@@ -1285,6 +1335,13 @@ function syncPanelToShape() {
   panelTextSize.value = selected.textSize || 16;
   panelTextColor.value = selected.textColor || "#000000";
   
+  // ---------------------------
+  // FOR EDGE
+  // ---------------------------
+  propArrowColor.value = selected.opts.color;
+
+
+  /*
   // edge fields
   // ---------------------------
   // EDGE / ARROW: ensure object
@@ -1305,6 +1362,7 @@ function syncPanelToShape() {
   propArrowColor.value = edge.color || "#000000";
   propArrowType.value  = edge.lineType || "solid";
   propArrowhead.value  = edge.head || "none";
+  */
 }
 
 // Ensure arrow object exists on any selected shape
@@ -1520,6 +1578,7 @@ document.getElementById("exportPngBtn").addEventListener("click", () => {
 
 // live updates for shape from panel
 propFill.addEventListener('input', (e) => { 
+  debugger;
   if (!selected) return;
 
   const fill = e.target.value;
@@ -1535,12 +1594,15 @@ propFill.addEventListener('input', (e) => {
 
 // live updates for edge from panel
 propArrowColor.addEventListener('input', (e) => { 
+  debugger;
 
-//debugger;
   if (!selected) return;
 
-  ensureArrowObject();
-  selected.arrow.color = e.target.value;
+  const color = e.target.value
+  selected.opts.color = color;
+  
+  //ensureArrowObject();
+  //selected.arrow.color = e.target.value;
 
   redraw();
 });
@@ -1767,11 +1829,18 @@ canvas.addEventListener('pointerdown', (ev) => {
         pendingConnection = hit;
       } else if (pendingConnection && hit !== pendingConnection) {
 	  
-        // second click → complete arrow
-        edges.push({
-          from: pendingConnection,
-          to: hit
-        });
+        // second click → create arrow
+		const newEdge = new Edge(
+		pendingConnection, // from shape Object
+        hit, // to shape Object
+		{
+		  color: "#000000",
+		  type: "solid",
+		  head: "triangle",
+		  text: "Text"
+		});
+        
+		edges.push(newEdge);
 
         pendingConnection = null;
       }
@@ -2364,18 +2433,9 @@ function redraw() {
 	renderText(ctx, s);
   });
   
-    // draw edges AFTER shapes (so arrowheads stay on top)
+  // draw edges
   edges.forEach(e => {
-    // get actual arrow start/end
-    const pts = getEdgePoints(e);
-	//debugger;
-    if (selected === e) {
-      // highlighted selected arrow
-      drawArrow(e.from, e.to, "red", 3);
-    } else {
-      // normal arrow
-      drawArrow(e.from, e.to, "#000", 2);
-    }
+    e.draw(ctx, e === selected);
   });
 	
   // draw temp shape (preview)
@@ -2560,48 +2620,6 @@ function updateShapePropertiesPanel(shape) {
 function centerEditorText(shape) {
     const approxOffset = (shape.h / 2) - 10;
     textEditor.style.paddingTop = approxOffset + "px";
-}
-
-// draw arrow/edge
-function drawArrow(from, to, color = "#000", lineWidth = 2) {
-    // get shape centers
-    const cx1 = from.type === "rectangle" ? from.x + from.w / 2 : from.x;
-    const cy1 = from.type === "rectangle" ? from.y + from.h / 2 : from.y;
-
-    const cx2 = to.type === "rectangle" ? to.x + to.w / 2 : to.x;
-    const cy2 = to.type === "rectangle" ? to.y + to.h / 2 : to.y;
-
-    // border intersection points
-    const start = getBorderPoint(from, cx2, cy2);
-    const end = getBorderPoint(to, cx1, cy1);
-
-    // draw arrow line
-    const headLength = 12;
-    const angle = Math.atan2(end.y - start.y, end.x - start.x);
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-
-    ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(end.x, end.y);
-
-    // arrowhead left
-    ctx.lineTo(
-        end.x - headLength * Math.cos(angle - Math.PI / 6),
-        end.y - headLength * Math.sin(angle - Math.PI / 6)
-    );
-
-    // move back to tip
-    ctx.moveTo(end.x, end.y);
-
-    // arrowhead right
-    ctx.lineTo(
-        end.x - headLength * Math.cos(angle + Math.PI / 6),
-        end.y - headLength * Math.sin(angle + Math.PI / 6)
-    );
-
-    ctx.stroke();
 }
 
 // get border from shape
