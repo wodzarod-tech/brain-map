@@ -459,8 +459,7 @@
     overflow: auto;
     border-radius: 6px;
   }
-  
-  .hidden{display:none}
+
 </style>
 </head>
 <body>
@@ -494,7 +493,6 @@
 		<button id="redoBtn" class="toolbar-icon-btn" title="Redo">↪️</button>
 		
 		<button id="loadGraphBtn" class="toolbar-icon-btn" title="Load JSON">📂</button>
-		<input id="loadGraphInput" accept=".json" type="file" class="hidden">
 		
 		<button id="saveAllBtn" class="toolbar-icon-btn" title="Save JSON">💾</button>
 
@@ -957,75 +955,39 @@ redoBtn.addEventListener('click', redo);
    Export / Import / Save
    ------------------------- */
 saveAllBtn.addEventListener('click', () => {
-  const data = {
-  shapes: shapes.map(n => ({
-  	type:n.type,
-    x:n.x,
-	y:n.y,
-    w:n.w,
-	h:n.h,
-	border:n.opts.border,
-	fill:n.opts.fill,
-	thickness:n.opts.thickness,
-	opacity:n.opts.opacity
-  })),
-  edges: edges.map(e => ({
-    from:e.from,
-	to:e.to,
-	color:e.opts.color,
-	type:e.opts.type,
-	head:e.opts.head,
-	text:e.opts.text
-  }))
-  };
-  
+  const data = { nodes: nodes.map(n => ({
+    x:n.x,y:n.y,color:n.color,shape:n.shape,title:n.title,titlePos:n.titlePos,comment:n.comment,selectedEdgeType:n.selectedEdgeType,selectedArrowhead:n.selectedArrowhead,selected:!!n.selected
+  })), edges: edges.map(e => ({ from:e.from, to:e.to, type:e.type, arrowhead:e.arrowhead })) };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'export_data.json';
+  a.download = 'graph_data.json';
   a.click();
 });
 
 loadGraphBtn.addEventListener('click', () => loadGraphInput.click());
 loadGraphInput.addEventListener('change', (ev) => {
-
   const file = ev.target.files[0];
-
-  if(!file)
-    return;
-  
+  if(!file) return;
   const reader = new FileReader();
-
   reader.onload = (e) => {
     try{
       const data = JSON.parse(e.target.result);
-	  
-      if(!data.shapes || !data.edges)
-	    throw new Error('Invalid format');
-	  
+      if(!data.nodes || !data.edges) throw new Error('Invalid format');
       pushHistory();
-	  
-      shapes = data.shapes.map(n => ({
-		type:n.type,
-		x:n.x,
-		y:n.y,
-		w:n.w,
-		h:n.h,
-		/*border: n.opts.border,*/
-		/*fill: n.opts.fill,*/
-		/*thickness: n.opts.thickness,*/
-		/*opacity: n.opts.opacity*/})
-	  );
-      edges = data.edges.map(e => ({
-	    from: e.from,
-		to: e.to,
-		/*color: e.opts.color,
-		type: e.opts.type,
-		head: e.opts.head,
-		text: e.opts.text*/})
-	  );
-		
-      //hideMenu();
+      nodes = data.nodes.map(n => ({
+        x: n.x, y: n.y,
+        color: n.color || '#3498db',
+        shape: n.shape || 'circle',
+        title: n.title || '',
+        titlePos: n.titlePos || 'above',
+        comment: n.comment || '',
+        selectedEdgeType: n.selectedEdgeType || 'solid',
+        selectedArrowhead: n.selectedArrowhead || 'triangle',
+        selected: !!n.selected
+      }));
+      edges = data.edges.map(e => ({ from: e.from, to: e.to, type: e.type || 'solid', arrowhead: e.arrowhead || 'triangle' }));
+      hideMenu();
       alert('Graph loaded successfully');
     }catch(err){
       alert('Failed to load graph: ' + err.message);
