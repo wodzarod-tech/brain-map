@@ -1005,25 +1005,36 @@ loadGraphInput.addEventListener('change', (ev) => {
 	  
       pushHistory();
 	  
+	  // rebuild all shapes as class instances
+      shapes = data.shapes.map(createShape);
+	  /*
       shapes = data.shapes.map(n => ({
 		type:n.type,
 		x:n.x,
 		y:n.y,
 		w:n.w,
 		h:n.h,
-		/*border: n.opts.border,*/
-		/*fill: n.opts.fill,*/
-		/*thickness: n.opts.thickness,*/
-		/*opacity: n.opts.opacity*/})
-	  );
+		border: n.border,
+		fill: n.fill,
+		thickness: n.thickness,
+		opacity: n.opacity})
+	  );*/
+	  
+	  // rebuild all edges as class instances
+      edges = data.edges
+			.map(createEdge)
+			.filter(e => e !== null);
+	  /*
       edges = data.edges.map(e => ({
 	    from: e.from,
 		to: e.to,
-		/*color: e.opts.color,
-		type: e.opts.type,
-		head: e.opts.head,
-		text: e.opts.text*/})
+		color: e.color,
+		type: e.type,
+		head: e.head,
+		text: e.text})
 	  );
+	  */
+	  redraw();
 		
       //hideMenu();
       alert('Graph loaded successfully');
@@ -1031,9 +1042,53 @@ loadGraphInput.addEventListener('change', (ev) => {
       alert('Failed to load graph: ' + err.message);
     }
   };
+
   reader.readAsText(file);
   loadGraphInput.value = '';
 });
+
+function createShape(s) {
+  return new Shape(
+    s.type,
+    s.x,
+    s.y,
+    s.w,
+    s.h,
+    {
+      border: s.border,
+      fill: s.fill,
+      thickness: s.thickness,
+      opacity: s.opacity
+    }
+  );
+}
+
+function matchShape(jsonShape) {
+  return shapes.find(s =>
+    s.type === jsonShape.type &&
+    s.x === jsonShape.x &&
+    s.y === jsonShape.y &&
+    s.w === jsonShape.w &&
+    s.h === jsonShape.h
+  );
+}
+
+function createEdge(ed) {
+  const fromShape = matchShape(ed.from);
+  const toShape   = matchShape(ed.to);
+
+  if (!fromShape || !toShape) {
+    console.warn("Edge refers to missing shape", ed);
+    return null;
+  }
+
+  return new Edge(fromShape, toShape, {
+    color: ed.color,
+    type: ed.type,
+    head: ed.head,
+    text: ed.text
+  });
+}
 
 /* -------------------- Canvas size -------------------- */
 
@@ -1904,6 +1959,7 @@ propH.addEventListener('input', () => {
 /* -------------------- Pointer Events -------------------- */
 // when mouse click
 canvas.addEventListener('pointerdown', (ev) => {
+  de
   ev.preventDefault();
 
   canvas.setPointerCapture(ev.pointerId);
